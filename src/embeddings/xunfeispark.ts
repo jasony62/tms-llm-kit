@@ -6,6 +6,7 @@ import { EmbeddingsParams } from 'langchain/embeddings/base'
 import { Embeddings2 } from './types.js'
 
 import Debug from 'debug'
+import { resolve } from 'path'
 
 const debug = Debug('embeddings:xunfeispark')
 
@@ -125,26 +126,32 @@ class SparkModel {
       },
     }
 
-    try {
-      const rsp = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(posted),
-      })
+    const rsp = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(posted),
+    })
 
-      const json: EmbeddingResult = await rsp.json()
-
-      if (json.payload) {
-        let { vector } = json.payload.text
-        return JSON.parse(vector)
-      } else {
-        console.log('[embedding:xunfeispark] 请求返回结果异常：', json)
-        return null
-      }
-    } catch (e: any) {
-      console.log('请求异常：', e.message)
-      return null
+    const json: EmbeddingResult = await rsp.json()
+    if (json.header.code !== 0) {
+      debug('操作异常\n%O', json.header)
+      throw new Error(json.header.message)
+    }
+    if (json.payload) {
+      let { vector } = json.payload.text
+      return JSON.parse(vector)
+    } else {
+      debug('返回结果异常\n%O', json)
+      throw new Error('[embedding:xunfeispark] 请求返回结果异常')
     }
   }
+}
+
+async function waitFor(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true)
+    }, ms)
+  })
 }
 
 export class XunfeisparkEmbeddings extends Embeddings2 {
@@ -174,6 +181,7 @@ export class XunfeisparkEmbeddings extends Embeddings2 {
       if (vector) {
         vectors.push(vector)
         debug(`完成第个【${++i}】文档`)
+        await waitFor(50)
       }
     }
     return vectors

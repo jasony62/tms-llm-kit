@@ -4,7 +4,7 @@ import fs from 'fs'
 
 import { BaseDocumentLoader } from 'langchain/document_loaders'
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
-import { HNSWLib } from 'langchain/vectorstores'
+import { HNSWLib } from 'langchain/vectorstores/hnswlib'
 
 import Debug from 'debug'
 import { getEmbedding } from './embeddings/index.js'

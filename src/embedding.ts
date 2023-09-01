@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { program } from 'commander'
-import { Embeddings } from 'langchain/embeddings'
+import { Embeddings } from 'langchain/embeddings/base'
 
 import Debug from 'debug'
 
@@ -42,6 +42,11 @@ switch (ModelName) {
 }
 
 if (embedding) {
-  let result = await embedding.embedQuery(text)
-  console.log('返回结果：\n', result)
+  try {
+    let result = await embedding.embedQuery(text)
+    console.log('返回结果：\n', result)
+  } catch (e: any) {
+    console.log('操作失败，原因：' + e.message)
+    debug('发生异常\n%O', e)
+  }
 }

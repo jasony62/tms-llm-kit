@@ -86,7 +86,7 @@ DEBUG=\* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' -
 ```
 
 ```shell
-DEBUG=\* node ./dist/build --type json --file ./sample/data01-faq.csv --content q,a --meta id --store ./store/data01-faq-xf --model xunfeispark
+DEBUG=\* node ./dist/build --type csv --file ./sample/data01-faq.csv --content q,a --meta id --store ./store/data01-faq-xf --model xunfeispark
 ```
 
 ```shell

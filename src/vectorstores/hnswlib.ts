@@ -1,6 +1,6 @@
 import { Document } from 'langchain/document'
 import { HNSWLib } from 'langchain/vectorstores/hnswlib'
-import { Embeddings } from 'langchain/embeddings'
+import { Embeddings } from 'langchain/embeddings/base'
 import jsonpointer from 'jsonpointer'
 
 interface MetaFilter {

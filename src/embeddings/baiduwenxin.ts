@@ -60,13 +60,17 @@ export async function createWenxinModel(): Promise<WenxinModel> {
     let { status, statusText } = result
     debug('获取访问凭证返回结果：\n%O', { status, statusText })
 
-    let data = await result.json()
+    if (status === 200) {
+      let data = await result.json()
 
-    let { access_token, expires_in } = data
-    data.expireAt = Math.floor(Date.now() / 1000) + expires_in
-    fs.writeFileSync(ACCESS_TOKEN_FILE, JSON.stringify(data))
+      let { access_token, expires_in } = data
+      data.expireAt = Math.floor(Date.now() / 1000) + expires_in
+      fs.writeFileSync(ACCESS_TOKEN_FILE, JSON.stringify(data))
 
-    accessToken = access_token
+      accessToken = access_token
+    } else {
+      throw new Error('获取access_token失败，原因：' + statusText)
+    }
   }
 
   const model = new WenxinModel(accessToken)
