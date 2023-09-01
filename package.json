@@ -1,0 +1,35 @@
+{
+  "name": "tms-vecdb-kit",
+  "version": "0.0.1",
+  "description": "基于langchain实现的向量数据库工具集，包括：生成向量数据，向量查询等。",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && node ./dist/index.js"
+  },
+  "keywords": [
+    "langchain",
+    "embedding",
+    "vector database"
+  ],
+  "author": "jasony62",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "d3-dsv": "^3.0.1",
+    "debug": "^4.3.4",
+    "dotenv": "^16.3.1",
+    "hnswlib-node": "^2.0.0",
+    "jsonpointer": "^5.0.1",
+    "langchain": "^0.0.134",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/d3-dsv": "^3.0.2",
+    "@types/debug": "^4.1.8",
+    "@types/node": "^20.5.6",
+    "@types/ws": "^8.5.5",
+    "typescript": "5.3.0-dev.20230830"
+  }
+}
