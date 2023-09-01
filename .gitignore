@@ -1,0 +1,6 @@
+dist/
+node_modules/
+.env
+access_token.json
+pnpm-lock.yaml
+store/

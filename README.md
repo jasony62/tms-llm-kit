@@ -116,7 +116,7 @@ https://docs.requarks.io/dev/api
 根据输入的文本和元数据过滤条件，返回匹配的文档
 
 ```shell
-DEBUG=\* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset similarity --text xxxx --filter '{"/_pageContentSource":"q"}
+DEBUG=\* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset similarity --text xxxx --filter '{"/_pageContentSource":"q"}'
 ```
 
 根据指定的元数据过滤条件，返回匹配的文本
