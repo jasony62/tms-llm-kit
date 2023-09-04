@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { program } from 'commander'
 import fs from 'fs'
+import path from 'path'
 
 import { BaseDocumentLoader } from 'langchain/document_loaders'
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
@@ -8,14 +9,17 @@ import { HNSWLib } from 'langchain/vectorstores/hnswlib'
 
 import Debug from 'debug'
 import { getEmbedding } from './embeddings/index.js'
+import { SynchronousInMemoryDocstore } from 'langchain/stores/doc/in_memory'
+import { Document } from 'langchain/document'
 
 const debug = Debug('load')
 
 program.requiredOption('-t, --type <modelName>', '文件类型，json或csv或wikijs')
 program.option('-f, --file <file>', '要加载的文件')
 program.option('--url <url>', 'wikijs的api地址')
-program.option('--content <content>', '要提取的内容')
-program.option('--meta <meta>', '元数据字段')
+program.option('--as-vec <asVec>', '作为向量处理的字段。')
+program.option('--as-doc <asDoc>', '作为文档处理的字段。')
+program.option('--as-meta <asMeta>', '作为元数据处理的字段。')
 program.option('--store <store>', '向量数据库的存储位置')
 program.option(
   '--model <model>',
@@ -39,10 +43,11 @@ if (/json|csv/.test(FileType)) {
     process.exit(0)
   }
 }
+
 /**
- * 定义要提取的信息
+ * 要进行向量化的资料
  */
-const { content: ContentField, meta: MetaField } = options
+const { asVec: VecField, asMeta: MetaField } = options
 
 debug(`加在类型为【${FileType}】的文件【${FilePath}】`)
 
@@ -50,13 +55,13 @@ let loader: BaseDocumentLoader | undefined
 switch (FileType) {
   case 'json':
     const { JSONLoader } = await import('./document_loaders/fs/json.js')
-    loader = new JSONLoader(FilePath, ContentField, MetaField)
+    loader = new JSONLoader(FilePath, VecField, MetaField)
     break
   case 'csv':
     {
       const { CSVLoader } = await import('./document_loaders/fs/csv.js')
       let options = {
-        column: ContentField ?? undefined,
+        column: VecField ?? undefined,
         meta: MetaField ?? undefined,
       }
       loader = new CSVLoader(FilePath, options)
@@ -102,4 +107,40 @@ if (StorePath && ModelName) {
 
     await vectorStore.save(StorePath)
   }
+}
+/**
+ * 要进行文档化的资料
+ */
+const { asDoc: DocField } = options
+if (DocField) {
+  switch (FileType) {
+    case 'json':
+      const { JSONLoader } = await import('./document_loaders/fs/json.js')
+      loader = new JSONLoader(FilePath, DocField, MetaField)
+      break
+    case 'csv':
+      {
+        const { CSVLoader } = await import('./document_loaders/fs/csv.js')
+        let options = {
+          column: DocField ?? undefined,
+          meta: MetaField ?? undefined,
+        }
+        loader = new CSVLoader(FilePath, options)
+      }
+      break
+  }
+
+  const docs2 = await loader.load()
+  console.log('加载结果：\n', docs2)
+
+  let docstore2: SynchronousInMemoryDocstore = new SynchronousInMemoryDocstore()
+  const toSave: Record<string, Document> = {}
+  for (let i = 0; i < docs2.length; i += 1) {
+    toSave[i] = docs2[i]
+  }
+  docstore2.add(toSave)
+  await fs.writeFileSync(
+    path.join(StorePath, 'docstore-nonvec.json'),
+    JSON.stringify(Array.from(docstore2._docs.entries()))
+  )
 }

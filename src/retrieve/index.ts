@@ -2,7 +2,8 @@ import jsonpointer from 'jsonpointer'
 import { HNSWLib2 } from '../vectorstores/hnswlib.js'
 import { Document } from 'langchain/document'
 import { ChatBaiduWenxin } from 'langchain/chat_models/baiduwenxin'
-import { LLMChain, PromptTemplate } from 'langchain'
+import { LLMChain } from 'langchain/chains'
+import { PromptTemplate } from 'langchain/prompts'
 import { ChatXunfeiSpark } from '../chat_models/xunfeispark.js'
 
 interface PointerFilter {
@@ -91,6 +92,7 @@ export class SimilaritySearch extends SearchPipeline {
 interface MetadataSearchOptions {
   filter?: PointerFilter
   matchBy?: string[]
+  fromNonvecStore?: boolean
 }
 
 export class MetadataSearch extends SearchPipeline {
@@ -99,6 +101,8 @@ export class MetadataSearch extends SearchPipeline {
   matchBy: string[] | undefined
 
   matchByPointers: jsonpointer[] | undefined
+
+  fromNonvecStore = false
 
   constructor(vectorStore: HNSWLib2, options?: MetadataSearchOptions) {
     super(vectorStore)
@@ -109,6 +113,9 @@ export class MetadataSearch extends SearchPipeline {
     if (options?.matchBy) {
       this.matchBy = options.matchBy
       this.matchByPointers = options.matchBy.map((p) => jsonpointer.compile(p))
+    }
+    if (options?.fromNonvecStore === true) {
+      this.fromNonvecStore = true
     }
   }
   /**
@@ -132,7 +139,9 @@ export class MetadataSearch extends SearchPipeline {
             ...this.filter,
           }
         }
-        let docs = await this.vectorStore?.metadataSearch(matcher)
+        let docs = await this.vectorStore?.metadataSearch(matcher, {
+          fromNonvecStore: this.fromNonvecStore,
+        })
         if (docs) {
           if (result) {
             result.push(...docs)
@@ -142,7 +151,9 @@ export class MetadataSearch extends SearchPipeline {
         }
       }
     } else if (this.filter) {
-      result = await this.vectorStore?.metadataSearch(this.filter)
+      result = await this.vectorStore?.metadataSearch(this.filter, {
+        fromNonvecStore: this.fromNonvecStore,
+      })
     }
 
     if (this.next) {

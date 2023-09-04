@@ -23,8 +23,8 @@ program.option('--text <text>', '检索的文本')
 program.option('-k <neighbors>', '返回匹配文档的数量', '1')
 program.option('--perset <perset>', '预制检索模式')
 program.option('--filter <filter>', '文档筛选条件')
-program.option('--match-by <matchBy>', '本地搜索时要匹配的字段，逗号分隔')
-program.option('--sub-filter <subFilter>', '本地搜索时要匹配的条件，JSON格式')
+program.option('--nonvec-match <nvMatch>', '本地搜索时要匹配的字段，逗号分隔')
+program.option('--nonvec-filter <nvFilter>', '本地搜索时要匹配的条件，JSON格式')
 
 program.parse()
 const options = program.opts()
@@ -50,20 +50,18 @@ const { filter: FilterString } = options
 const filter = FilterString ? JSON.parse(FilterString) : undefined
 
 let result: Document<Record<string, any>>[] | undefined
-if (perset === 'similarity') {
+if (perset === 'vector-answer') {
   const { text, k } = options
   let pipeline = new SimilaritySearch(vectorStore, { filter, k })
   result = await pipeline.run(text)
-} else if (perset === 'metadata') {
-  let pipeline = new MetadataSearch(vectorStore, { filter })
-  result = await pipeline.run()
-} else if (perset === 'local-answer') {
-  const { text, k, matchBy, subFilter: SubFilterString } = options
-  const subFilter = SubFilterString ? JSON.parse(SubFilterString) : undefined
+} else if (perset === 'nonvec-answer') {
+  const { text, k, nonvecMatch, nonvecFilter: NonvecFilterStr } = options
+  const nvFilter = NonvecFilterStr ? JSON.parse(NonvecFilterStr) : undefined
   let pipeline = new SimilaritySearch(vectorStore, { filter, k })
   let pipeline2 = new MetadataSearch(vectorStore, {
-    matchBy: matchBy.split(','),
-    filter: subFilter,
+    matchBy: nonvecMatch.split(','),
+    filter: nvFilter,
+    fromNonvecStore: true,
   })
   pipeline.next = pipeline2
   result = await pipeline.run(text)
@@ -73,6 +71,15 @@ if (perset === 'similarity') {
   let pipeline2 = new LLMAnswer(text)
   pipeline.next = pipeline2
   result = await pipeline.run(text)
+} else if (perset === 'metadata') {
+  let pipeline = new MetadataSearch(vectorStore, { filter })
+  result = await pipeline.run()
+} else if (perset === 'nonvec-metadata') {
+  let pipeline = new MetadataSearch(vectorStore, {
+    filter,
+    fromNonvecStore: true,
+  })
+  result = await pipeline.run()
 }
 
-console.log('返回的答案：\n%O', result)
+console.log('返回的答案：\n%s', JSON.stringify(result, null, 2))
