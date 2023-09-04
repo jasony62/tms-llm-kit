@@ -24,7 +24,7 @@ program.option('-k <neighbors>', '返回匹配文档的数量', '1')
 program.option('--perset <perset>', '预制检索模式')
 program.option('--filter <filter>', '文档筛选条件')
 program.option('--match-by <matchBy>', '本地搜索时要匹配的字段，逗号分隔')
-program.option('--filter2 <filter2>', '本地搜索时要匹配的条件，JSON格式')
+program.option('--sub-filter <subFilter>', '本地搜索时要匹配的条件，JSON格式')
 
 program.parse()
 const options = program.opts()
@@ -58,12 +58,12 @@ if (perset === 'similarity') {
   let pipeline = new MetadataSearch(vectorStore, { filter })
   result = await pipeline.run()
 } else if (perset === 'local-answer') {
-  const { text, k, matchBy, filter2: Filter2String } = options
-  const filter2 = Filter2String ? JSON.parse(Filter2String) : undefined
+  const { text, k, matchBy, subFilter: SubFilterString } = options
+  const subFilter = SubFilterString ? JSON.parse(SubFilterString) : undefined
   let pipeline = new SimilaritySearch(vectorStore, { filter, k })
   let pipeline2 = new MetadataSearch(vectorStore, {
     matchBy: matchBy.split(','),
-    filter: filter2,
+    filter: subFilter,
   })
   pipeline.next = pipeline2
   result = await pipeline.run(text)

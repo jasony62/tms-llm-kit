@@ -74,27 +74,27 @@ S5 --> Z
 执行如下命令加载文件，并生成向量数据库。
 
 ```shell
-DEBUG=\* node ./dist/build --type csv --file ./sample/data01-faq.csv --content q,a --meta id --store ./store/data01-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --content q,a --meta id --store ./store/data01-faq-wx --model baiduwenxin
 ```
 
 ```shell
-DEBUG=\* node ./dist/build --type json --file ./sample/data02-faq.json --content q,a --meta id --store ./store/data02-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --content q,a --meta id --store ./store/data02-faq-wx --model baiduwenxin
 ```
 
 ```shell
-DEBUG=\* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-wx --model baiduwenxin
 ```
 
 ```shell
-DEBUG=\* node ./dist/build --type csv --file ./sample/data01-faq.csv --content q,a --meta id --store ./store/data01-faq-xf --model xunfeispark
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --content q,a --meta id --store ./store/data01-faq-xf --model xunfeispark
 ```
 
 ```shell
-DEBUG=\* node ./dist/build --type json --file ./sample/data02-faq.json --content q,a --meta id --store ./store/data02-faq-xf --model xunfeispark
+DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --content q,a --meta id --store ./store/data02-faq-xf --model xunfeispark
 ```
 
 ```shell
-DEBUG=\* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-xf --model xunfeispark
+DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-xf --model xunfeispark
 ```
 
 | 参数    | 说明                                                    | 默认值 |
@@ -116,26 +116,36 @@ https://docs.requarks.io/dev/api
 根据输入的文本和元数据过滤条件，返回匹配的文档
 
 ```shell
-DEBUG=\* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset similarity --text xxxx --filter '{"/_pageContentSource":"q"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset similarity --text xxxx --filter '{"/_pageContentSource":"q"}'
 ```
 
 根据指定的元数据过滤条件，返回匹配的文本
 
 ```shell
-DEBUG=\* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset metadata --filter '{"/id":"1","/_pageContentSource":"q"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset metadata --filter '{"/id":"1","/_pageContentSource":"q"}'
 ```
 
 先根据输入的文本和过滤条件搜索相似的文档，再用文档的元数据信息进行向量库的元数据搜索
 
 ```shell
-DEBUG=\* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset local-answer --text xxxx --filter '{"/_pageContentSource":"q"}' --match-by '/id' --filter2 '{"/_pageContentSource":"a"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset local-answer --text xxxx --filter '{"/_pageContentSource":"q"}' --match-by '/id' --sub-filter '{"/_pageContentSource":"a"}'
 ```
 
 将检索到的文本作为素材提供给大模型生成答案
 
 ```shell
-DEBUG=\* node ./dist/retrieve --model baiduwenxin --store ./data05-faq-wx --perset llm-answer --text xxxx --filter '{"/_pageContentSource":"a"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./data05-faq-wx --perset llm-answer --text xxxx --filter '{"/_pageContentSource":"a"}'
 ```
+
+| 参数       | 说明                              | 默认值 |
+| ---------- | --------------------------------- | ------ |
+| model      | 使用的语言大模型。                | 无     |
+| store      | 向量数据目录地址。                | 无     |
+| perset     | 预定义的检索方式。                | 无     |
+| text       | 检索条件。                        | 无     |
+| filter     | 文档过滤条件。JSON 格式的字符串。 | 无     |
+| match-by   | 文档匹配字段。                    | 无     |
+| sub-filter | 文档过滤条件。JSON 格式的字符串。 | 无     |
 
 # 计算向量
 
