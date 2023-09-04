@@ -1,85 +1,53 @@
 import 'dotenv/config'
 import { program } from 'commander'
 import fs from 'fs'
+import { runPerset } from './retrieve/perset.js'
 
-import Debug from 'debug'
-import { HNSWLib2 } from './vectorstores/hnswlib.js'
-import { getEmbedding } from './embeddings/index.js'
-import {
-  LLMAnswer,
-  MetadataSearch,
-  SimilaritySearch,
-} from './retrieve/index.js'
-import { Document } from 'langchain/document'
+/**
+ * 将json格式的参数转为json对象
+ * @param value
+ * @returns
+ */
+function parseJsonOption(value: string) {
+  return value ? JSON.parse(value) : undefined
+}
 
-const debug = Debug('search')
-
-program.option('--store <store>', '向量数据库的存储位置')
-program.option(
+program.requiredOption('--store <directory>', '向量数据库的存储位置')
+program.requiredOption(
   '--model <model>',
   '使用的模型名称，支持：baiduwenxin和xunfeispark'
 )
-program.option('--text <text>', '检索的文本')
+program.option('--text <text>', '要在向量数据库中检索的文本')
 program.option('-k <neighbors>', '返回匹配文档的数量', '1')
-program.option('--perset <perset>', '预制检索模式')
-program.option('--filter <filter>', '文档筛选条件')
-program.option('--nonvec-match <nvMatch>', '本地搜索时要匹配的字段，逗号分隔')
-program.option('--nonvec-filter <nvFilter>', '本地搜索时要匹配的条件，JSON格式')
+program.option(
+  '--perset <perset>',
+  '预制检索模式，支持：vector-doc，nonvec-doc，llm-answer，meta-vector-doc，meta-nonvec-doc'
+)
+program.option(
+  '--filter <filter>',
+  '向量数据库文档元数据筛选条件',
+  parseJsonOption
+)
+program.option(
+  '--nonvec-match <nvMatch...>',
+  '向量数据库中搜索的文档，作为非向量数据库搜索时匹配条件的字段，空格分隔多个字段'
+)
+program.option(
+  '--nonvec-filter <nvFilter>',
+  '非向量数据库搜索时要匹配的条件，JSON格式',
+  parseJsonOption
+)
 
 program.parse()
 const options = program.opts()
 
-const { store: StorePath, model: ModelName } = options
+const { store } = options
 
-if (!fs.existsSync(StorePath)) {
-  console.log(`指定的向量数据库【${StorePath}】不存在`)
+if (!fs.existsSync(store)) {
+  console.log(`指定的向量数据库【${store}】不存在`)
   process.exit(0)
 }
 
-const embedding = await getEmbedding(ModelName)
-/**
- * 从指定的数据库中加载数据
- */
-const vectorStore = await HNSWLib2.load(StorePath, embedding)
-
-const { perset } = options
-/**
- * 检索条件
- */
-const { filter: FilterString } = options
-const filter = FilterString ? JSON.parse(FilterString) : undefined
-
-let result: Document<Record<string, any>>[] | undefined
-if (perset === 'vector-answer') {
-  const { text, k } = options
-  let pipeline = new SimilaritySearch(vectorStore, { filter, k })
-  result = await pipeline.run(text)
-} else if (perset === 'nonvec-answer') {
-  const { text, k, nonvecMatch, nonvecFilter: NonvecFilterStr } = options
-  const nvFilter = NonvecFilterStr ? JSON.parse(NonvecFilterStr) : undefined
-  let pipeline = new SimilaritySearch(vectorStore, { filter, k })
-  let pipeline2 = new MetadataSearch(vectorStore, {
-    matchBy: nonvecMatch.split(','),
-    filter: nvFilter,
-    fromNonvecStore: true,
-  })
-  pipeline.next = pipeline2
-  result = await pipeline.run(text)
-} else if (perset === 'llm-answer') {
-  const { text, k } = options
-  let pipeline = new SimilaritySearch(vectorStore, { filter, k })
-  let pipeline2 = new LLMAnswer(text)
-  pipeline.next = pipeline2
-  result = await pipeline.run(text)
-} else if (perset === 'metadata') {
-  let pipeline = new MetadataSearch(vectorStore, { filter })
-  result = await pipeline.run()
-} else if (perset === 'nonvec-metadata') {
-  let pipeline = new MetadataSearch(vectorStore, {
-    filter,
-    fromNonvecStore: true,
-  })
-  result = await pipeline.run()
-}
+let result = await runPerset(options.perset, options)
 
 console.log('返回的答案：\n%s', JSON.stringify(result, null, 2))

@@ -26,12 +26,13 @@ abstract class SearchPipeline {
   }
 }
 
-interface SimilaritySearchOptions {
+interface VectorSearchOptions {
   filter: PointerFilter
   k: number
 }
 
 /**
+ * 将筛选条件编译为检查规则方法
  *
  * @param filter
  * @returns
@@ -51,14 +52,14 @@ function compilePointerFilter(
   return fnFilter
 }
 /**
- * 相似度搜索
+ * 在向量数据库中根据语义搜索匹配的文档
  */
-export class SimilaritySearch extends SearchPipeline {
+export class VectorSearch extends SearchPipeline {
   filter: PointerFilter | undefined
 
   k = 1
 
-  constructor(vectorStore: HNSWLib2, options?: SimilaritySearchOptions) {
+  constructor(vectorStore: HNSWLib2, options?: VectorSearchOptions) {
     super(vectorStore)
 
     if (options?.filter) {

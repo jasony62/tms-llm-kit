@@ -135,7 +135,7 @@ https://docs.requarks.io/dev/api
 根据输入的文本（text）和元数据过滤条件（filter）(可不写)，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset vector-answer --text 风险 --filter '{"/_pageContentSource":"q"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset vector-doc --text 风险 --filter '{"/_pageContentSource":"q"}'
 ```
 
 ```json
@@ -160,7 +160,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 先根据输入的文本（text）和过滤条件（filter）搜索相似的文档，再用文档的元数据（nonvec-match）在非向量库中进行元数据搜索。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset nonvec-answer --text 风险 --filter '{"/_pageContentSource":"q"}' --nonvec-match '/id' --nonvec-filter '{"/_pageContentSource":"a"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset nonvec-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --nonvec-match '/id' --nonvec-filter '{"/_pageContentSource":"a"}'
 ```
 
 ```json
@@ -194,7 +194,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 根据指定的元数据过滤条件（filter），在向量化文档库中搜索，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset metadata --filter '{"/id":"1"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset meta-vector-doc --filter '{"/id":"1"}'
 ```
 
 ```json
@@ -219,7 +219,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 根据指定的元数据过滤条件（filter），在非向量化文档库中搜索，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset metadata --filter '{"/id":"1"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset meta-nonvec-doc --filter '{"/id":"1"}'
 ```
 
 ```json
@@ -244,6 +244,10 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 | filter        | 文档过滤条件。JSON 格式的字符串。 | 无     |
 | nonvec-match  | 文档匹配字段。                    | 无     |
 | nonvec-filter | 文档过滤条件。JSON 格式的字符串。 | 无     |
+
+**注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
+
+参考：https://www.npmjs.com/package/jsonpointer
 
 # 计算向量
 
