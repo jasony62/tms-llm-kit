@@ -41,13 +41,18 @@ program.option(
 program.parse()
 const options = program.opts()
 
-const { store } = options
+const { store, model, text } = options
+
+// if (!text) {
+//   console.log(`没有指定要检索的文本`)
+//   process.exit(0)
+// }
 
 if (!fs.existsSync(store)) {
   console.log(`指定的向量数据库【${store}】不存在`)
   process.exit(0)
 }
 
-let result = await runPerset(options.perset, options)
+let result = await runPerset(options.perset, options, text, model)
 
 console.log('返回的答案：\n%s', JSON.stringify(result, null, 2))

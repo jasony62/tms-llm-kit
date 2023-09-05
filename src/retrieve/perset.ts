@@ -80,7 +80,12 @@ class MetaNonvecDoc extends RetrievePerset {
   }
 }
 
-export async function runPerset(name: string, options: Record<string, any>) {
+export async function runPerset(
+  name: string,
+  options: Record<string, any>,
+  text?: string,
+  model?: string
+) {
   let persetClass: any
   switch (name) {
     case 'vector-doc':
@@ -101,7 +106,7 @@ export async function runPerset(name: string, options: Record<string, any>) {
   }
   if (!persetClass) throw new Error('指定了无效的预制操作：' + name)
 
-  const embedding = await getEmbedding(options.model)
+  const embedding = await getEmbedding(model ?? 'baiduwenxin')
   /**
    * 从指定的数据库中加载数据
    */
@@ -109,5 +114,5 @@ export async function runPerset(name: string, options: Record<string, any>) {
 
   const perset = new persetClass(vectorStore, options)
 
-  return await perset.run(options.text)
+  return await perset.run(text)
 }
