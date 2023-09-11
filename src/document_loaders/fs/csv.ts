@@ -56,7 +56,6 @@ export class CSVLoader extends TextLoader {
       this.options = options ?? this.options
     }
   }
-
   public async load(): Promise<Document[]> {
     let text: string
     let metadata: Record<string, string>

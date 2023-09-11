@@ -4,13 +4,11 @@ import fs from 'fs'
 import path from 'path'
 
 import { BaseDocumentLoader } from 'langchain/document_loaders'
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
-import { HNSWLib } from 'langchain/vectorstores/hnswlib'
-
-import Debug from 'debug'
-import { getEmbedding } from './embeddings/index.js'
 import { SynchronousInMemoryDocstore } from 'langchain/stores/doc/in_memory'
 import { Document } from 'langchain/document'
+import { createStorer } from './build/store.js'
+
+import Debug from 'debug'
 
 const debug = Debug('load')
 
@@ -27,17 +25,19 @@ program.option(
 )
 program.option('--chunk-size <chunkSize>', '拆分后的文本块大小')
 program.option('--chunk-overlap <chunkOverlap>', '拆分后的文本块最大重叠大小')
+program.option('--db-name <dbName>', '数据库名称')
+program.option('--cl-name <clName>', '集合名称')
 
 program.parse()
 const options = program.opts()
 
-const { type: FileType, file: FilePath } = options
-if (!['json', 'csv', 'wikijs'].includes(FileType)) {
+const { type: LoaderType, file: FilePath } = options
+if (!['json', 'csv', 'wikijs', 'tmw', 'mongodb'].includes(LoaderType)) {
   console.log('没有指定要加载的资料源类型')
   process.exit(0)
 }
 
-if (/json|csv/.test(FileType)) {
+if (/json|csv/.test(LoaderType)) {
   if (!fs.existsSync(FilePath)) {
     console.log('指定的文件不存在')
     process.exit(0)
@@ -49,10 +49,11 @@ if (/json|csv/.test(FileType)) {
  */
 const { asVec: VecField, asMeta: MetaField } = options
 
-debug(`加在类型为【${FileType}】的文件【${FilePath}】`)
+debug(`加载类型为【${LoaderType}】的数据`)
 
 let loader: BaseDocumentLoader | undefined
-switch (FileType) {
+let loaderSource: Record<string, any> | false
+switch (LoaderType) {
   case 'json':
     const { JSONLoader } = await import('./document_loaders/fs/json.js')
     loader = new JSONLoader(FilePath, VecField, MetaField)
@@ -77,6 +78,36 @@ switch (FileType) {
       loader = new WikijsPageLoader(wikiUrl, wikijsApiKey)
     }
     break
+  case 'tmw':
+    const { TmwCollectionLoader } = await import(
+      './document_loaders/web/tmw.js'
+    )
+    const tmwUrl = options.url
+    const tmwAccessToken = process.env.TMW_ACCESS_TOKEN
+    if (tmwUrl && tmwAccessToken) {
+      loader = new TmwCollectionLoader(
+        tmwUrl,
+        tmwAccessToken,
+        VecField,
+        MetaField
+      )
+    }
+    break
+  case 'mongodb':
+    const { MongodbCollectionLoader } = await import(
+      './document_loaders/db/mongodb.js'
+    )
+    const { url, dbName, clName } = options
+    if (url && dbName && clName) {
+      loader = new MongodbCollectionLoader(
+        url,
+        dbName,
+        clName,
+        VecField,
+        MetaField
+      )
+    }
+    break
 }
 
 if (!loader) {
@@ -90,30 +121,22 @@ console.log('加载结果：\n', docs)
 const { store: StorePath, model: ModelName } = options
 
 if (StorePath && ModelName) {
-  const embedding = await getEmbedding(ModelName)
-
-  if (embedding) {
-    let { chunkSize, chunkOverlap } = options
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize:
-        chunkSize < embedding.maxChunkSize ? chunkSize : embedding.maxChunkSize,
+  let { chunkSize, chunkOverlap } = options
+  await createStorer(ModelName, StorePath).store(
+    docs,
+    {
+      chunkSize,
       chunkOverlap,
-      keepSeparator: false,
-    })
-    const chunks = await splitter.splitDocuments(docs)
-
-    // Load the docs into the vector store
-    const vectorStore = await HNSWLib.fromDocuments(chunks, embedding)
-
-    await vectorStore.save(StorePath)
-  }
+    },
+    LoaderType === 'mongodb' ? loader : undefined
+  )
 }
 /**
  * 要进行文档化的资料
  */
 const { asDoc: DocField } = options
 if (DocField) {
-  switch (FileType) {
+  switch (LoaderType) {
     case 'json':
       const { JSONLoader } = await import('./document_loaders/fs/json.js')
       loader = new JSONLoader(FilePath, DocField, MetaField)

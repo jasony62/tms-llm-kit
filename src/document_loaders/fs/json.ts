@@ -3,18 +3,16 @@ import { TextLoader } from 'langchain/document_loaders/fs/text'
 import { Document } from 'langchain/document'
 
 export class JSONLoader extends TextLoader {
-  public contentPts: string[]
-  public metaPts: string[]
+  vecPts: string[]
+  metaPts: string[]
 
   constructor(
     filePathOrBlob: string | Blob,
-    contentPts: string | string[] = [],
+    vecPts: string | string[] = [],
     metaPts: string | string[] = []
   ) {
     super(filePathOrBlob)
-    this.contentPts = Array.isArray(contentPts)
-      ? contentPts
-      : contentPts.split(',')
+    this.vecPts = Array.isArray(vecPts) ? vecPts : vecPts.split(',')
     this.metaPts = Array.isArray(metaPts) ? metaPts : metaPts.split(',')
   }
 
@@ -43,7 +41,7 @@ export class JSONLoader extends TextLoader {
     if (json.length === 0) return []
 
     const documents: Document[] = []
-    const compiledPointers1 = this.contentPts.map((pointer) => {
+    const compiledPointers1 = this.vecPts.map((pointer) => {
       return /^\//.test(pointer)
         ? jsonpointer.compile(pointer)
         : jsonpointer.compile('/' + pointer)
@@ -60,7 +58,7 @@ export class JSONLoader extends TextLoader {
         let metadata = {
           ...metabase,
           // line: documents.length + 1,
-          _pageContentSource: this.contentPts[index],
+          _pageContentSource: this.vecPts[index],
         }
         compiledPointers2.forEach((pt) => {
           pt.set(metadata, pt.get(row))

@@ -1,4 +1,4 @@
-`tms-vecdb-kit`以`langchain`为基础，实现了基于文件、`wikijs`等语料源建立和使用向量数据库的功能。
+`tms-vecdb-kit`以`langchain`为基础，实现了基于文件、`wikijs`、`tms-mongodb-web`等语料源建立和使用向量数据库的功能。
 
 将文本资料加载到向量数据库中，可以实现语义搜索功能。资料中的内容向量化后用于语义搜索，元数据用于关键字匹配连接其他相关的数据。因此，加载资料时需要指定哪些部分是内容，哪些部分是元数据。语言大模型的向量空间是私有的，使用哪个大模型就要用它提供的接口做向量化。向量化接口有长度限制，执行向量计算前要将分档拆分为适当的大小。
 
@@ -111,6 +111,18 @@ DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --
 
 ```shell
 DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-xf --model xunfeispark
+```
+
+从`tms-mongodb-web`加载
+
+```shell
+DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/document/list?db=e2e5gmx&cl=dialog_script' --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/tmw-wx
+```
+
+从`mongodb`加载
+
+```shell
+DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name e2e5gmx --cl-name rcs_file --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/mongodb-wx
 ```
 
 | 参数    | 说明                                   | 默认值 |
