@@ -13,6 +13,8 @@ interface MetadataRetrieveOptions {
   filter?: PointerFilter
   matchBy?: string[]
   fromNonvecStore?: boolean
+  asDoc?: string[]
+  asMeta?: string[]
 }
 /**
  * 根据元数据检索文档
@@ -26,24 +28,36 @@ export class MetadataRetrieve extends RetrievePipeline {
 
   fromNonvecStore = false
 
+  asDoc: string[] | undefined
+
+  asMeta: string[] | undefined
+
   loaderArgs: Record<string, any> | undefined
 
   constructor(vectorStore: HNSWLib2, options?: MetadataRetrieveOptions) {
     if (!vectorStore) throw new Error('没有指定向量数据库实例')
 
     super(vectorStore)
-    if (options?.filter) {
-      const { filter } = options
-      this.filter = typeof filter === 'string' ? JSON.parse(filter) : filter
-    }
-    if (options?.matchBy) {
-      this.matchBy = options.matchBy
-      this.matchByPointers = options.matchBy.map((p) => {
-        return jsonpointer.compile(p.indexOf('/') !== 0 ? '/' + p : p)
-      })
-    }
-    if (options?.fromNonvecStore === true) {
-      this.fromNonvecStore = true
+    if (options && typeof options === 'object') {
+      const { filter, matchBy, fromNonvecStore, asDoc, asMeta } = options
+      if (filter) {
+        this.filter = typeof filter === 'string' ? JSON.parse(filter) : filter
+      }
+      if (matchBy) {
+        this.matchBy = matchBy
+        this.matchByPointers = matchBy.map((p) => {
+          return jsonpointer.compile(p.indexOf('/') !== 0 ? '/' + p : p)
+        })
+      }
+      if (fromNonvecStore === true) {
+        this.fromNonvecStore = true
+      }
+      if (asDoc) {
+        this.asDoc = asDoc
+      }
+      if (asMeta) {
+        this.asMeta = asMeta
+      }
     }
     // 向量数据库的存储路径
     const { directory } = vectorStore
@@ -68,12 +82,56 @@ export class MetadataRetrieve extends RetrievePipeline {
     const cursor = cl.find(filter)
     const lcDocs = []
     for await (const rawDoc of cursor) {
-      lcDocs.push(
-        new Document({
-          pageContent: '',
-          metadata: rawDoc,
+      if (this.asDoc && this.asDoc.length) {
+        let contents: [string, any][] = []
+        for (let docField of this.asDoc) {
+          let content = rawDoc[docField]
+          if (content && typeof content === 'string') {
+            contents.push([docField, content])
+            delete rawDoc[docField]
+          }
+        }
+        let metadata: any
+        if (this.asMeta && this.asMeta.length) {
+          metadata = this.asMeta.reduce((m, k) => {
+            m[k] = rawDoc[k]
+            return m
+          }, {} as any)
+        } else {
+          metadata = {
+            ...rawDoc,
+          }
+        }
+        contents.forEach(([k, pageContent]) => {
+          lcDocs.push(
+            new Document({
+              pageContent,
+              metadata: {
+                ...metadata,
+                _pageContentSource: k,
+              },
+            })
+          )
         })
-      )
+      } else {
+        let metadata: any
+        if (this.asMeta && this.asMeta.length) {
+          metadata = this.asMeta.reduce((m, k) => {
+            m[k] = rawDoc[k]
+            return m
+          }, {} as any)
+        } else {
+          metadata = {
+            ...rawDoc,
+          }
+        }
+        lcDocs.push(
+          new Document({
+            pageContent: '',
+            metadata,
+          })
+        )
+      }
     }
     return lcDocs
   }
@@ -109,9 +167,7 @@ export class MetadataRetrieve extends RetrievePipeline {
         }
       }
     } else if (this.filter) {
-      let matcher: Record<string, any> = {}
-
-      result = await this._fetchMongoOnce(cl, matcher)
+      result = await this._fetchMongoOnce(cl, this.filter)
     }
 
     client.close()

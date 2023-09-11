@@ -37,6 +37,8 @@ program.option(
   '非向量数据库搜索时要匹配的条件，JSON格式',
   parseJsonOption
 )
+program.option('--as-doc <asDoc...>', '作为文档处理的字段。')
+program.option('--as-meta <asMeta...>', '作为元数据处理的字段。')
 
 program.parse()
 const options = program.opts()

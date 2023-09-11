@@ -125,16 +125,16 @@ DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/docu
 DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name e2e5gmx --cl-name rcs_file --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/mongodb-wx
 ```
 
-| 参数    | 说明                                   | 默认值 |
-| ------- | -------------------------------------- | ------ |
-| type    | 数据类型，支持：json，csv 和 wikijs。  | 无     |
-| file    | 要加载的文件路径，适用于 json 和 csv。 | 无     |
-| url     | wikijs 的 api 地址。                   | 无     |
-| as-vec  | 作为向量处理的字段。                   |        |
-| as-doc  | 作为文档处理的字段。                   |        |
-| as-meta | 作为元数据处理的字段。                 |        |
-| store   | 生成的向量数据库存储路径。             | 无     |
-| model   | 使用的语言大模型。                     | 无     |
+| 参数    | 说明                                   | 类型 | 默认值 |
+| ------- | -------------------------------------- | ---- | ------ |
+| type    | 数据类型，支持：json，csv 和 wikijs。  |      | 无     |
+| file    | 要加载的文件路径，适用于 json 和 csv。 |      | 无     |
+| url     | wikijs 的 api 地址。                   |      | 无     |
+| as-vec  | 作为向量处理的字段。                   |      |        |
+| as-doc  | 作为文档处理的字段。                   | 数组 |        |
+| as-meta | 作为元数据处理的字段。                 | 数组 |        |
+| store   | 生成的向量数据库存储路径。             |      | 无     |
+| model   | 使用的语言大模型。                     |      | 无     |
 
 字段：csv 文件中的列，json 对象的字段路径。
 
@@ -247,15 +247,17 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 ]
 ```
 
-| 参数          | 说明                              | 默认值 |
-| ------------- | --------------------------------- | ------ |
-| model         | 使用的语言大模型。                | 无     |
-| store         | 向量数据目录地址。                | 无     |
-| perset        | 预定义的检索方式。                | 无     |
-| text          | 检索条件。                        | 无     |
-| filter        | 文档过滤条件。JSON 格式的字符串。 | 无     |
-| nonvec-match  | 文档匹配字段。                    | 无     |
-| nonvec-filter | 文档过滤条件。JSON 格式的字符串。 | 无     |
+| 参数          | 说明                              | 类型 | 默认值 |
+| ------------- | --------------------------------- | ---- | ------ |
+| model         | 使用的语言大模型。                | 文本 | 无     |
+| store         | 向量数据目录地址。                | 文本 | 无     |
+| perset        | 预定义的检索方式。                | 文本 | 无     |
+| text          | 检索条件。                        | 文本 | 无     |
+| filter        | 文档过滤条件。JSON 格式的字符串。 | JSON | 无     |
+| nonvec-match  | 文档匹配字段。                    | 数组 | 无     |
+| nonvec-filter | 文档过滤条件。JSON 格式的字符串。 | JSON | 无     |
+| as-doc        | 原始数据中作为文档处理的字段。    | 数组 |        |
+| as-meta       | 原始数据中作为元数据处理的字段。  | 数组 |        |
 
 **注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
 

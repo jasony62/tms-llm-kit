@@ -33,13 +33,22 @@ class NonvecDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('nonvec-doc', vectorStore)
   }
-  async run(text: string): Promise<Document<Record<string, any>>[]> {
-    const { filter, k, nonvecMatch, nonvecFilter: nvFilter } = this.options
+  async run(text: string): Promise<Document[]> {
+    const {
+      filter,
+      k,
+      nonvecMatch,
+      nonvecFilter: nvFilter,
+      asDoc,
+      asMeta,
+    } = this.options
     let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
     let pipeline2 = new MetadataRetrieve(this.vectorStore, {
       matchBy: nonvecMatch,
       filter: nvFilter,
       fromNonvecStore: true,
+      asDoc,
+      asMeta,
     })
     pipeline.next = pipeline2
     let result = await pipeline.run(text)
