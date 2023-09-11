@@ -7,7 +7,7 @@ import Debug from 'debug'
 import fs from 'fs'
 import { Embeddings2 } from './types.js'
 
-const debug = Debug('embeddings:baiduwenxin')
+const debug = Debug('tms-llm-kit:embeddings:baiduwenxin')
 
 const OAUTH_BASE_URL =
   'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials'
@@ -81,6 +81,7 @@ class WenxinModel {
   constructor(public accessToken: string) {}
 
   async embedding(input: EmbeddingInput) {
+    debug(`准备${input.length}对个文档执行嵌入`)
     let url = `${EMBEDDING_API_URL}?access_token=${this.accessToken}`
     let rsp = await fetch(url, {
       method: 'POST',
@@ -90,9 +91,15 @@ class WenxinModel {
 
     debug('Embedding返回结果：\n%O', { status, statusText })
 
-    let json = await rsp.json()
+    const json = await rsp.json()
+    const { error_code, error_msg, data } = json
 
-    return json.data
+    if (error_code) {
+      debug('Embedding发生错误：code=%s,msg=%s', error_code, error_msg)
+      throw new Error('Embedding发生错误：' + error_msg)
+    }
+
+    return data
   }
 }
 
@@ -128,6 +135,7 @@ export class BaiduwenxinEmbeddings extends Embeddings2 {
       let end = start + 16
       let docs = documents.slice(start, end)
       let result = await model.embedding(docs)
+      await waitFor(100)
       if (result && Array.isArray(result)) {
         embeddings.push(...result.map((o: any) => o.embedding))
       } else {
@@ -141,4 +149,12 @@ export class BaiduwenxinEmbeddings extends Embeddings2 {
     let embeddings = await this.embedDocuments([doc])
     return embeddings[0]
   }
+}
+
+async function waitFor(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true)
+    }, ms)
+  })
 }

@@ -5,9 +5,13 @@ import { Document } from 'langchain/document'
 import { PromptTemplate } from 'langchain/prompts'
 import { LLMChain } from 'langchain/chains'
 
+import Debug from 'debug'
+
+const debug = Debug('tms-llm-kit:retrieve:pipeline:llmanswer')
+
 interface LLMAnswerOptions {
-  modelName: string
-  verbose: boolean
+  modelName?: string
+  verbose?: boolean
 }
 /**
  * 语言大模型生成回复
@@ -44,9 +48,8 @@ export class LLMAnswer extends RetrievePipeline {
    * @param documents
    * @returns
    */
-  async run(
-    documents?: Document<Record<string, any>>[]
-  ): Promise<Document<Record<string, any>>[]> {
+  async run(documents?: Document[]): Promise<Document[]> {
+    debug(`指定了${documents?.length ?? 0}个文档作为背景资料`)
     if (Array.isArray(documents) && documents.length) {
       /**
        * 让llm生成答案
@@ -59,9 +62,12 @@ export class LLMAnswer extends RetrievePipeline {
         case 'xunfeispark':
           llm = this.xunfeispark()
           break
+        default:
+          debug(`不支持的语言大模型：${this.modelName}`)
       }
 
       if (llm) {
+        debug('开始通过大模型生成回答')
         const prompt = PromptTemplate.fromTemplate(
           '根据给出的资料，回答用户的问题，必须符合用户对答案的要求。\n资料：{stuff}\n\n问题：{question}'
         )

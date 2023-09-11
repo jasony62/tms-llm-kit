@@ -3,9 +3,9 @@ import { PointerFilter, RetrievePipeline } from '../pipeline.js'
 import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
 import { Document } from 'langchain/document'
 import fs from 'fs'
+import { Collection } from 'mongodb'
 
 import Debug from 'debug'
-import { Collection } from 'mongodb'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline:metadata')
 
@@ -193,6 +193,7 @@ export class MetadataRetrieve extends RetrievePipeline {
             ...this.filter,
           }
         }
+        debug(`本地非向量化文档检索条件\n%O`, matcher)
         let docs = await this.vectorStore?.metadataSearch(matcher, {
           fromNonvecStore: this.fromNonvecStore,
         })
@@ -209,6 +210,7 @@ export class MetadataRetrieve extends RetrievePipeline {
         fromNonvecStore: this.fromNonvecStore,
       })
     }
+    return result
   }
   /**
    * lorder名称
@@ -223,6 +225,7 @@ export class MetadataRetrieve extends RetrievePipeline {
    * @returns
    */
   async run(documents?: Document[]): Promise<Document[]> {
+    debug(`指定了${documents?.length ?? 0}个文档作为检索条件`)
     let result
     switch (this.loaderName) {
       case 'MongodbCollectionLoader':

@@ -19,9 +19,9 @@ class VectorDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('vector-doc', vectorStore)
   }
-  async run(text: string): Promise<Document<Record<string, any>>[]> {
-    const { filter, k } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
+  async run(text: string): Promise<Document[]> {
+    const { filter, numStuff } = this.options
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
     let result = await pipeline.run(text)
     return result
   }
@@ -36,13 +36,13 @@ class NonvecDoc extends RetrievePerset {
   async run(text: string): Promise<Document[]> {
     const {
       filter,
-      k,
+      numStuff,
       nonvecMatch,
       nonvecFilter: nvFilter,
       asDoc,
       asMeta,
     } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
     let pipeline2 = new MetadataRetrieve(this.vectorStore, {
       matchBy: nonvecMatch,
       filter: nvFilter,
@@ -62,10 +62,11 @@ class LlmAnswer extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('llm-answer', vectorStore)
   }
-  async run(text: string): Promise<Document<Record<string, any>>[]> {
-    const { filter, k } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
-    let pipeline2 = new LLMAnswer(text)
+  async run(text: string): Promise<Document[]> {
+    const { filter, numStuff, model } = this.options
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
+    let modelName = model as string
+    let pipeline2 = new LLMAnswer(text, { modelName })
     pipeline.next = pipeline2
     let result = await pipeline.run(text)
     return result
@@ -118,7 +119,7 @@ export async function runPerset(
       persetClass = NonvecDoc
       break
     case 'llm-answer':
-      persetClass = LLMAnswer
+      persetClass = LlmAnswer
       break
     case 'meta-vector-doc':
       persetClass = MetaVectorDoc

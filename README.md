@@ -1,4 +1,4 @@
-`tms-vecdb-kit`以`langchain`为基础，实现了基于文件、`wikijs`、`tms-mongodb-web`等语料源建立和使用向量数据库的功能。
+`tms-llm-kit`以`langchain`为基础，实现了基于文件、`wikijs`、`tms-mongodb-web`等语料源建立和使用向量数据库的功能。
 
 将文本资料加载到向量数据库中，可以实现语义搜索功能。资料中的内容向量化后用于语义搜索，元数据用于关键字匹配连接其他相关的数据。因此，加载资料时需要指定哪些部分是内容，哪些部分是元数据。语言大模型的向量空间是私有的，使用哪个大模型就要用它提供的接口做向量化。向量化接口有长度限制，执行向量计算前要将分档拆分为适当的大小。
 
@@ -100,7 +100,7 @@ DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q
 字段`q`执行向量化，可通过语义检索；字段`a`直接保存为文档，仅可通过元数据检索；字段`id`作为元数据。
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-doc a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type csv --file ./sample/data02-faq.csv --as-vec q --as-doc a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
 ```
 
 从`wikijs`加载，不支持非向量化文档。
@@ -275,8 +275,8 @@ node ./dist/embedding --model baiduwenxin --text 介绍语言大模型
 
 构造镜像
 
-> docker build -t jasony62/tms-vecdb-kit .
+> docker build -t jasony62/tms-llm-kit .
 
 在容器中执行
 
-> docker run -it --rm --name tvk-test -v $PWD/.env:/usr/tms-vecdb-kit/.env -v $PWD/store:/usr/store jasony62/tms-vecdb-kit sh
+> docker run -it --rm --name tlk-test -v $PWD/.env:/usr/tms-llm-kit/.env -v $PWD/store:/usr/store jasony62/tms-llm-kit sh
