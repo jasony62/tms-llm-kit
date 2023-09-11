@@ -1,6 +1,10 @@
 import { Document } from 'langchain/document'
 import { HNSWLib2 } from '../vectorstores/hnswlib.js'
-import { LLMAnswer, MetadataSearch, VectorSearch } from './pipeline.js'
+import {
+  VectorRetrieve,
+  MetadataRetrieve,
+  LLMAnswer,
+} from './pipeline/index.js'
 import { getEmbedding } from '../embeddings/index.js'
 
 abstract class RetrievePerset {
@@ -8,27 +12,31 @@ abstract class RetrievePerset {
 
   abstract run(text?: string): Promise<Document<Record<string, any>>[]>
 }
-
+/**
+ * 语义检索向量化文档
+ */
 class VectorDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('vector-doc', vectorStore)
   }
   async run(text: string): Promise<Document<Record<string, any>>[]> {
     const { filter, k } = this.options
-    let pipeline = new VectorSearch(this.vectorStore, { filter, k })
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
     let result = await pipeline.run(text)
     return result
   }
 }
-
+/**
+ * 语义检索非向量化文档
+ */
 class NonvecDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('nonvec-doc', vectorStore)
   }
   async run(text: string): Promise<Document<Record<string, any>>[]> {
     const { filter, k, nonvecMatch, nonvecFilter: nvFilter } = this.options
-    let pipeline = new VectorSearch(this.vectorStore, { filter, k })
-    let pipeline2 = new MetadataSearch(this.vectorStore, {
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
+    let pipeline2 = new MetadataRetrieve(this.vectorStore, {
       matchBy: nonvecMatch,
       filter: nvFilter,
       fromNonvecStore: true,
@@ -38,40 +46,46 @@ class NonvecDoc extends RetrievePerset {
     return result
   }
 }
-
+/**
+ * 语言大模型生成回复
+ */
 class LlmAnswer extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('llm-answer', vectorStore)
   }
   async run(text: string): Promise<Document<Record<string, any>>[]> {
     const { filter, k } = this.options
-    let pipeline = new VectorSearch(this.vectorStore, { filter, k })
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, k })
     let pipeline2 = new LLMAnswer(text)
     pipeline.next = pipeline2
     let result = await pipeline.run(text)
     return result
   }
 }
-
+/**
+ * 元数据检索向量化文档
+ */
 class MetaVectorDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('meta-vector-doc', vectorStore)
   }
   async run(): Promise<Document<Record<string, any>>[]> {
     const { filter } = this.options
-    let pipeline = new MetadataSearch(this.vectorStore, { filter })
+    let pipeline = new MetadataRetrieve(this.vectorStore, { filter })
     let result = await pipeline.run()
     return result
   }
 }
-
+/**
+ * 元数据检索非向量化文档
+ */
 class MetaNonvecDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
     super('meta-nonvec-doc', vectorStore)
   }
   async run(): Promise<Document<Record<string, any>>[]> {
     const { filter } = this.options
-    let pipeline = new MetadataSearch(this.vectorStore, {
+    let pipeline = new MetadataRetrieve(this.vectorStore, {
       filter,
       fromNonvecStore: true,
     })

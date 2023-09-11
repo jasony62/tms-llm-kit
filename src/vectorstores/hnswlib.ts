@@ -16,7 +16,7 @@ export class HNSWLib2 {
    */
   docstoreNonvec?: SynchronousInMemoryDocstore
 
-  constructor(public store: HNSWLib) {}
+  constructor(public store: HNSWLib, public directory: string) {}
 
   get docstore() {
     return this.store.docstore
@@ -29,7 +29,7 @@ export class HNSWLib2 {
    */
   static async load(directory: string, embeddings: Embeddings) {
     let store = await HNSWLib.load(directory, embeddings)
-    let lib = new HNSWLib2(store)
+    let lib = new HNSWLib2(store, directory)
     /**
      * 未向量化文档资料
      */

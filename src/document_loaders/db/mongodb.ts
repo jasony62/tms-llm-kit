@@ -39,6 +39,7 @@ export class MongodbCollectionLoader extends BaseDocumentLoader {
 
   toJSON() {
     return {
+      loaderName: 'MongodbCollectionLoader',
       connUri: this.connUri,
       dbName: this.dbName,
       clName: this.clName,

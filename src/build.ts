@@ -10,7 +10,7 @@ import { createStorer } from './build/store.js'
 
 import Debug from 'debug'
 
-const debug = Debug('load')
+const debug = Debug('build')
 
 program.requiredOption('-t, --type <modelName>', '文件类型，json或csv或wikijs')
 program.option('-f, --file <file>', '要加载的文件')

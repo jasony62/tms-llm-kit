@@ -1,0 +1,83 @@
+import { ChatBaiduWenxin } from 'langchain/chat_models/baiduwenxin'
+import { RetrievePipeline } from '../pipeline.js'
+import { ChatXunfeiSpark } from '../../chat_models/xunfeispark.js'
+import { Document } from 'langchain/document'
+import { PromptTemplate } from 'langchain/prompts'
+import { LLMChain } from 'langchain/chains'
+
+interface LLMAnswerOptions {
+  modelName: string
+  verbose: boolean
+}
+/**
+ * 语言大模型生成回复
+ */
+export class LLMAnswer extends RetrievePipeline {
+  modelName = 'baiduwenxin'
+  verbose = false
+  constructor(public question: string, options?: LLMAnswerOptions) {
+    super()
+    if (options?.verbose === true) this.verbose = true
+    if (options?.modelName) this.modelName = options.modelName
+  }
+  baiduwenxin() {
+    const { BAIDUWENXIN_API_KEY, BAIDUWENXIN_SECRET_KEY } = process.env
+    const llm = new ChatBaiduWenxin({
+      baiduApiKey: BAIDUWENXIN_API_KEY,
+      baiduSecretKey: BAIDUWENXIN_SECRET_KEY,
+      temperature: 0.5,
+    })
+    return llm
+  }
+  xunfeispark() {
+    const { XUNFEISPARK_API_KEY, XUNFEISPARK_SECRET_KEY, XUNFEISPARK_APP_ID } =
+      process.env
+    const llm = new ChatXunfeiSpark({
+      xunfeiApiKey: XUNFEISPARK_API_KEY,
+      xunfeiSecretKey: XUNFEISPARK_SECRET_KEY,
+      xunfeiAppId: XUNFEISPARK_APP_ID,
+    })
+    return llm
+  }
+  /**
+   *
+   * @param documents
+   * @returns
+   */
+  async run(
+    documents?: Document<Record<string, any>>[]
+  ): Promise<Document<Record<string, any>>[]> {
+    if (Array.isArray(documents) && documents.length) {
+      /**
+       * 让llm生成答案
+       */
+      let llm
+      switch (this.modelName) {
+        case 'baiduwenxin':
+          llm = this.baiduwenxin()
+          break
+        case 'xunfeispark':
+          llm = this.xunfeispark()
+          break
+      }
+
+      if (llm) {
+        const prompt = PromptTemplate.fromTemplate(
+          '根据给出的资料，回答用户的问题，必须符合用户对答案的要求。\n资料：{stuff}\n\n问题：{question}'
+        )
+
+        const chain = new LLMChain({
+          llm,
+          prompt,
+          verbose: this.verbose,
+        })
+        let stuff = documents.map((doc) => doc.pageContent).join('\n')
+        const answer = await chain.call({ stuff, question: this.question })
+
+        return [new Document({ pageContent: answer.text })]
+      }
+    }
+
+    return []
+  }
+}
