@@ -15,6 +15,7 @@ interface MetadataRetrieveOptions {
   fromAssocStore?: boolean
   asDoc?: string[]
   asMeta?: string[]
+  retrieveObject?: boolean
 }
 /**
  * 根据元数据检索文档
@@ -32,6 +33,8 @@ export class MetadataRetrieve extends RetrievePipeline {
 
   asMeta: string[] | undefined
 
+  retrieveObject = false
+
   loaderArgs: Record<string, any> | undefined
 
   constructor(vectorStore: HNSWLib2, options?: MetadataRetrieveOptions) {
@@ -39,7 +42,8 @@ export class MetadataRetrieve extends RetrievePipeline {
 
     super(vectorStore)
     if (options && typeof options === 'object') {
-      const { filter, matchBy, fromAssocStore, asDoc, asMeta } = options
+      const { filter, matchBy, fromAssocStore, asDoc, asMeta, retrieveObject } =
+        options
       if (filter) {
         this.filter = typeof filter === 'string' ? JSON.parse(filter) : filter
       }
@@ -58,6 +62,7 @@ export class MetadataRetrieve extends RetrievePipeline {
       if (asMeta) {
         this.asMeta = asMeta
       }
+      this.retrieveObject = retrieveObject === true
     }
     // 向量数据库的存储路径
     const { directory } = vectorStore
@@ -83,36 +88,53 @@ export class MetadataRetrieve extends RetrievePipeline {
     const lcDocs = []
     for await (const rawDoc of cursor) {
       if (this.asDoc && this.asDoc.length) {
-        let contents: [string, any][] = []
-        for (let docField of this.asDoc) {
-          let content = rawDoc[docField]
-          if (content && typeof content === 'string') {
-            contents.push([docField, content])
-            delete rawDoc[docField]
+        if (this.retrieveObject === true) {
+          let content: Record<string, any> = {}
+          for (let k of this.asDoc) {
+            let v = rawDoc[k]
+            content[k] = v
+            delete rawDoc[k]
           }
-        }
-        let metadata: any
-        if (this.asMeta && this.asMeta.length) {
-          metadata = this.asMeta.reduce((m, k) => {
-            m[k] = rawDoc[k]
-            return m
-          }, {} as any)
-        } else {
-          metadata = {
-            ...rawDoc,
-          }
-        }
-        contents.forEach(([k, pageContent]) => {
           lcDocs.push(
             new Document({
-              pageContent,
+              pageContent: JSON.stringify(content),
               metadata: {
-                ...metadata,
-                _pageContentSource: k,
+                ...rawDoc,
               },
             })
           )
-        })
+        } else {
+          let contents: [string, any][] = []
+          for (let docField of this.asDoc) {
+            let content = rawDoc[docField]
+            if (content && typeof content === 'string') {
+              contents.push([docField, content])
+              delete rawDoc[docField]
+            }
+          }
+          let metadata: any
+          if (this.asMeta && this.asMeta.length) {
+            metadata = this.asMeta.reduce((m, k) => {
+              m[k] = rawDoc[k]
+              return m
+            }, {} as any)
+          } else {
+            metadata = {
+              ...rawDoc,
+            }
+          }
+          contents.forEach(([k, pageContent]) => {
+            lcDocs.push(
+              new Document({
+                pageContent,
+                metadata: {
+                  ...metadata,
+                  _pageContentSource: k,
+                },
+              })
+            )
+          })
+        }
       } else {
         let metadata: any
         if (this.asMeta && this.asMeta.length) {
@@ -161,9 +183,11 @@ export class MetadataRetrieve extends RetrievePipeline {
           else matcher[k] = doc.metadata[k]
         })
         debug('mongodb文档筛选条件\n%O', matcher)
-        let docs = await this._fetchMongoOnce(cl, matcher)
-        if (docs) {
-          result ? result.push(...docs) : (result = docs)
+        if (Object.keys(matcher).length) {
+          let docs = await this._fetchMongoOnce(cl, matcher)
+          if (docs) {
+            result ? result.push(...docs) : (result = docs)
+          }
         }
       }
     } else if (this.filter) {

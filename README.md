@@ -94,13 +94,17 @@ DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q,a
 ```
 
 ```shell
-DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q,a --meta id --store ./store/data02-faq-xf --model xunfeispark
+DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q,a --as-meta id --store ./store/data02-faq-xf --model xunfeispark
 ```
 
 字段`q`执行向量化，可通过语义检索；字段`a`直接保存为文档，仅可通过元数据检索；字段`id`作为元数据。
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data02-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data03-faq-wx --model baiduwenxin
+```
+
+```shell
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data03-faq-xf --model xunfeispark
 ```
 
 从`wikijs`加载，不支持非向量化文档。
@@ -125,16 +129,18 @@ DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/docu
 DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name e2e5gmx --cl-name rcs_file --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/mongodb-wx
 ```
 
-| 参数     | 说明                                   | 类型 | 默认值 |
-| -------- | -------------------------------------- | ---- | ------ |
-| type     | 数据类型，支持：json，csv 和 wikijs。  |      | 无     |
-| file     | 要加载的文件路径，适用于 json 和 csv。 |      | 无     |
-| url      | wikijs 的 api 地址。                   |      | 无     |
-| as-vec   | 作为向量处理的字段。                   |      |        |
-| as-assoc | 作为关联文档处理的字段。               | 数组 |        |
-| as-meta  | 作为元数据处理的字段。                 | 数组 |        |
-| store    | 生成的向量数据库存储路径。             |      | 无     |
-| model    | 使用的语言大模型。                     |      | 无     |
+命令使用的参数如下：
+
+| 参数     | 说明                                         | 类型 | 默认值 |
+| -------- | -------------------------------------------- | ---- | ------ |
+| type     | 数据类型，支持：json，csv，wikijs，mongodb。 |      | 无     |
+| file     | 要加载的文件路径，适用于 json 和 csv。       |      | 无     |
+| url      | wikijs 的 api 地址。mongodb 的连接地址。     |      | 无     |
+| as-vec   | 作为向量处理的字段。                         |      |        |
+| as-assoc | 作为关联文档处理的字段。                     | 数组 |        |
+| as-meta  | 作为元数据处理的字段。                       | 数组 |        |
+| store    | 生成的向量数据库存储路径。                   |      | 无     |
+| model    | 使用的语言大模型。                           |      | 无     |
 
 字段：csv 文件中的列，json 对象的字段路径。
 
@@ -147,7 +153,7 @@ https://docs.requarks.io/dev/api
 根据输入的文本（text）和元数据过滤条件（filter）(可不写)，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset vector-doc --text 风险 --filter '{"/_pageContentSource":"q"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset vector-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --num-retrieve 1
 ```
 
 ```json
@@ -172,7 +178,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 先根据输入的文本（text）和过滤条件（filter）搜索相似的文档，再用文档的元数据（assoc-match）在非向量库中进行元数据搜索。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset assoc-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --assoc-match '/id' --assoc-filter '{"/_pageContentSource":"a"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data03-faq-wx --perset assoc-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --assoc-match '/id' --num-retrieve 3
 ```
 
 ```json
@@ -247,17 +253,18 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 ]
 ```
 
-| 参数         | 说明                                  | 类型 | 默认值 |
-| ------------ | ------------------------------------- | ---- | ------ |
-| model        | 使用的语言大模型。                    | 文本 | 无     |
-| store        | 向量数据目录地址。                    | 文本 | 无     |
-| perset       | 预定义的检索方式。                    | 文本 | 无     |
-| text         | 检索条件。                            | 文本 | 无     |
-| filter       | 文档过滤条件。JSON 格式的字符串。     | JSON | 无     |
-| assoc-match  | 关联文档匹配字段。                    | 数组 | 无     |
-| assoc-filter | 关联文档过滤条件。JSON 格式的字符串。 | JSON | 无     |
-| as-doc       | 原始数据中作为文档处理的字段。        | 数组 |        |
-| as-meta      | 原始数据中作为元数据处理的字段。      | 数组 |        |
+| 参数            | 说明                                                                           | 类型    | 默认值 |
+| --------------- | ------------------------------------------------------------------------------ | ------- | ------ |
+| model           | 使用的语言大模型。                                                             | 文本    | 无     |
+| store           | 向量数据目录地址。                                                             | 文本    | 无     |
+| perset          | 预定义的检索方式。                                                             | 文本    | 无     |
+| text            | 检索条件。                                                                     | 文本    | 无     |
+| filter          | 文档过滤条件。JSON 格式的字符串。`jsonpointer`表示属性名和等于值的 JSON 对象。 | JSON    | 无     |
+| assoc-match     | 关联文档匹配字段。                                                             | 数组    | 无     |
+| assoc-filter    | 关联文档过滤条件。JSON 格式的字符串。                                          | JSON    | 无     |
+| as-doc          | 原始数据中作为文档处理的字段。                                                 | 数组    |        |
+| retrieve-object | 返回关联文档的对象。包含的字段由 as-doc 指定。                                 | boolean |        |
+| as-meta         | 原始数据中作为元数据处理的字段。                                               | 数组    |        |
 
 **注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
 

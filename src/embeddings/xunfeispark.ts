@@ -6,7 +6,6 @@ import { EmbeddingsParams } from 'langchain/embeddings/base'
 import { Embeddings2 } from './types.js'
 
 import Debug from 'debug'
-import { resolve } from 'path'
 
 const debug = Debug('embeddings:xunfeispark')
 
@@ -181,7 +180,7 @@ export class XunfeisparkEmbeddings extends Embeddings2 {
       if (vector) {
         vectors.push(vector)
         debug(`完成第个【${++i}】文档`)
-        await waitFor(50)
+        await waitFor(100)
       }
     }
     return vectors

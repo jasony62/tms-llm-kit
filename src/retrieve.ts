@@ -18,7 +18,7 @@ program.requiredOption(
   '使用的模型名称，支持：baiduwenxin和xunfeispark'
 )
 program.option('--text <text>', '要在向量数据库中检索的文本')
-program.option('--num-feed-llm <numFeedLlm>', '返回匹配文档的数量', '1')
+program.option('--num-retrieve <numRetrieve>', '返回匹配文档的数量', '1')
 program.option(
   '--perset <perset>',
   '预制检索模式，支持：vector-doc，assoc-doc，feed-llm，meta-vector-doc，meta-assoc-doc'
@@ -38,6 +38,7 @@ program.option(
   parseJsonOption
 )
 program.option('--as-doc <asDoc...>', '作为文档处理的字段。')
+program.option('--retrieve-object', '作为文档处理的字段。')
 program.option('--as-meta <asMeta...>', '作为元数据处理的字段。')
 
 program.parse()

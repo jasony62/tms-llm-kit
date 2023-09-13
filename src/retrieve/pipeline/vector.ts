@@ -8,7 +8,7 @@ import { Document } from 'langchain/document'
 
 interface VectorRetrieveOptions {
   filter: PointerFilter
-  numFeedLlm: number
+  numRetrieve: number
 }
 
 /**
@@ -17,7 +17,7 @@ interface VectorRetrieveOptions {
 export class VectorRetrieve extends RetrievePipeline {
   filter: PointerFilter | undefined
 
-  numFeedLlm = 1
+  numRetrieve = 1
 
   constructor(vectorStore: HNSWLib2, options?: VectorRetrieveOptions) {
     super(vectorStore)
@@ -26,8 +26,8 @@ export class VectorRetrieve extends RetrievePipeline {
       const { filter } = options
       this.filter = typeof filter === 'string' ? JSON.parse(filter) : filter
     }
-    if (options?.numFeedLlm) {
-      this.numFeedLlm = +options.numFeedLlm
+    if (options?.numRetrieve) {
+      this.numRetrieve = +options.numRetrieve
     }
   }
 
@@ -39,7 +39,7 @@ export class VectorRetrieve extends RetrievePipeline {
   async run(text: string): Promise<Document<Record<string, any>>[]> {
     const result = await this.vectorStore?.similaritySearch(
       text,
-      this.numFeedLlm,
+      this.numRetrieve,
       this.filter ? compilePointerFilter(this.filter) : undefined
     )
     if (this.next) {
