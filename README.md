@@ -100,7 +100,7 @@ DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q
 字段`q`执行向量化，可通过语义检索；字段`a`直接保存为文档，仅可通过元数据检索；字段`id`作为元数据。
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data02-faq.csv --as-vec q --as-doc a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type csv --file ./sample/data02-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
 ```
 
 从`wikijs`加载，不支持非向量化文档。
@@ -125,16 +125,16 @@ DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/docu
 DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name e2e5gmx --cl-name rcs_file --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/mongodb-wx
 ```
 
-| 参数    | 说明                                   | 类型 | 默认值 |
-| ------- | -------------------------------------- | ---- | ------ |
-| type    | 数据类型，支持：json，csv 和 wikijs。  |      | 无     |
-| file    | 要加载的文件路径，适用于 json 和 csv。 |      | 无     |
-| url     | wikijs 的 api 地址。                   |      | 无     |
-| as-vec  | 作为向量处理的字段。                   |      |        |
-| as-doc  | 作为文档处理的字段。                   | 数组 |        |
-| as-meta | 作为元数据处理的字段。                 | 数组 |        |
-| store   | 生成的向量数据库存储路径。             |      | 无     |
-| model   | 使用的语言大模型。                     |      | 无     |
+| 参数     | 说明                                   | 类型 | 默认值 |
+| -------- | -------------------------------------- | ---- | ------ |
+| type     | 数据类型，支持：json，csv 和 wikijs。  |      | 无     |
+| file     | 要加载的文件路径，适用于 json 和 csv。 |      | 无     |
+| url      | wikijs 的 api 地址。                   |      | 无     |
+| as-vec   | 作为向量处理的字段。                   |      |        |
+| as-assoc | 作为关联文档处理的字段。               | 数组 |        |
+| as-meta  | 作为元数据处理的字段。                 | 数组 |        |
+| store    | 生成的向量数据库存储路径。             |      | 无     |
+| model    | 使用的语言大模型。                     |      | 无     |
 
 字段：csv 文件中的列，json 对象的字段路径。
 

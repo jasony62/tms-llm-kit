@@ -16,7 +16,7 @@ program.requiredOption('-t, --type <modelName>', '文件类型，json或csv或wi
 program.option('-f, --file <file>', '要加载的文件')
 program.option('--url <url>', 'wikijs的api地址')
 program.option('--as-vec <asVec>', '作为向量处理的字段。')
-program.option('--as-doc <asDoc>', '作为文档处理的字段。')
+program.option('--as-assoc <asAssoc>', '作为文档处理的字段。')
 program.option('--as-meta <asMeta>', '作为元数据处理的字段。')
 program.option('--store <store>', '向量数据库的存储位置')
 program.option(
@@ -47,23 +47,22 @@ if (/json|csv/.test(LoaderType)) {
 /**
  * 要进行向量化的资料
  */
-const { asVec: VecField, asMeta: MetaField } = options
+const { asVec, asMeta } = options
 
 debug(`加载类型为【${LoaderType}】的数据`)
 
 let loader: BaseDocumentLoader | undefined
-let loaderSource: Record<string, any> | false
 switch (LoaderType) {
   case 'json':
     const { JSONLoader } = await import('./document_loaders/fs/json.js')
-    loader = new JSONLoader(FilePath, VecField, MetaField)
+    loader = new JSONLoader(FilePath, asVec, asMeta)
     break
   case 'csv':
     {
       const { CSVLoader } = await import('./document_loaders/fs/csv.js')
       let options = {
-        column: VecField ?? undefined,
-        meta: MetaField ?? undefined,
+        column: asVec ?? undefined,
+        meta: asMeta ?? undefined,
       }
       loader = new CSVLoader(FilePath, options)
     }
@@ -85,12 +84,7 @@ switch (LoaderType) {
     const tmwUrl = options.url
     const tmwAccessToken = process.env.TMW_ACCESS_TOKEN
     if (tmwUrl && tmwAccessToken) {
-      loader = new TmwCollectionLoader(
-        tmwUrl,
-        tmwAccessToken,
-        VecField,
-        MetaField
-      )
+      loader = new TmwCollectionLoader(tmwUrl, tmwAccessToken, asVec, asMeta)
     }
     break
   case 'mongodb':
@@ -99,13 +93,7 @@ switch (LoaderType) {
     )
     const { url, dbName, clName } = options
     if (url && dbName && clName) {
-      loader = new MongodbCollectionLoader(
-        url,
-        dbName,
-        clName,
-        VecField,
-        MetaField
-      )
+      loader = new MongodbCollectionLoader(url, dbName, clName, asVec, asMeta)
     }
     break
 }
@@ -134,19 +122,19 @@ if (StorePath && ModelName) {
 /**
  * 要进行文档化的资料
  */
-const { asDoc: DocField } = options
-if (DocField) {
+const { asAssoc } = options
+if (asAssoc) {
   switch (LoaderType) {
     case 'json':
       const { JSONLoader } = await import('./document_loaders/fs/json.js')
-      loader = new JSONLoader(FilePath, DocField, MetaField)
+      loader = new JSONLoader(FilePath, asAssoc, asMeta)
       break
     case 'csv':
       {
         const { CSVLoader } = await import('./document_loaders/fs/csv.js')
         let options = {
-          column: DocField ?? undefined,
-          meta: MetaField ?? undefined,
+          column: asAssoc ?? undefined,
+          meta: asMeta ?? undefined,
         }
         loader = new CSVLoader(FilePath, options)
       }
