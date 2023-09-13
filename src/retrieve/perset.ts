@@ -27,26 +27,20 @@ class VectorDoc extends RetrievePerset {
   }
 }
 /**
- * 语义检索非向量化文档
+ * 语义检索关联文档
  */
-class NonvecDoc extends RetrievePerset {
+class AssocDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('nonvec-doc', vectorStore)
+    super('assoc-doc', vectorStore)
   }
   async run(text: string): Promise<Document[]> {
-    const {
-      filter,
-      numStuff,
-      nonvecMatch,
-      nonvecFilter: nvFilter,
-      asDoc,
-      asMeta,
-    } = this.options
+    const { filter, numStuff, assocMatch, assocFilter, asDoc, asMeta } =
+      this.options
     let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
     let pipeline2 = new MetadataRetrieve(this.vectorStore, {
-      matchBy: nonvecMatch,
-      filter: nvFilter,
-      fromNonvecStore: true,
+      matchBy: assocMatch,
+      filter: assocFilter,
+      fromAssocStore: true,
       asDoc,
       asMeta,
     })
@@ -58,9 +52,9 @@ class NonvecDoc extends RetrievePerset {
 /**
  * 语言大模型生成回复
  */
-class LlmAnswer extends RetrievePerset {
+class FeedLlm extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('llm-answer', vectorStore)
+    super('feed-llm', vectorStore)
   }
   async run(text: string): Promise<Document[]> {
     const { filter, numStuff, model } = this.options
@@ -87,17 +81,17 @@ class MetaVectorDoc extends RetrievePerset {
   }
 }
 /**
- * 元数据检索非向量化文档
+ * 元数据检索关联文档
  */
-class MetaNonvecDoc extends RetrievePerset {
+class MetaAssocDoc extends RetrievePerset {
   constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('meta-nonvec-doc', vectorStore)
+    super('meta-assoc-doc', vectorStore)
   }
   async run(): Promise<Document<Record<string, any>>[]> {
     const { filter } = this.options
     let pipeline = new MetadataRetrieve(this.vectorStore, {
       filter,
-      fromNonvecStore: true,
+      fromAssocStore: true,
     })
     let result = await pipeline.run()
     return result
@@ -115,17 +109,17 @@ export async function runPerset(
     case 'vector-doc':
       persetClass = VectorDoc
       break
-    case 'nonvec-doc':
-      persetClass = NonvecDoc
+    case 'assoc-doc':
+      persetClass = AssocDoc
       break
-    case 'llm-answer':
-      persetClass = LlmAnswer
+    case 'feed-llm':
+      persetClass = FeedLlm
       break
     case 'meta-vector-doc':
       persetClass = MetaVectorDoc
       break
-    case 'meta-nonvec-doc':
-      persetClass = MetaNonvecDoc
+    case 'meta-assoc-doc':
+      persetClass = MetaAssocDoc
       break
   }
   if (!persetClass) throw new Error('指定了无效的预制操作：' + name)

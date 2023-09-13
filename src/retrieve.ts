@@ -21,7 +21,7 @@ program.option('--text <text>', '要在向量数据库中检索的文本')
 program.option('-k <neighbors>', '返回匹配文档的数量', '1')
 program.option(
   '--perset <perset>',
-  '预制检索模式，支持：vector-doc，nonvec-doc，llm-answer，meta-vector-doc，meta-nonvec-doc'
+  '预制检索模式，支持：vector-doc，assoc-doc，feed-llm，meta-vector-doc，meta-assoc-doc'
 )
 program.option(
   '--filter <filter>',
@@ -29,12 +29,12 @@ program.option(
   parseJsonOption
 )
 program.option(
-  '--nonvec-match <nvMatch...>',
-  '向量数据库中搜索的文档，作为非向量数据库搜索时匹配条件的字段，空格分隔多个字段'
+  '--assoc-match <assocMatch...>',
+  '向量数据库中搜索的文档，作为关联数据库搜索时匹配条件的字段，空格分隔多个字段'
 )
 program.option(
-  '--nonvec-filter <nvFilter>',
-  '非向量数据库搜索时要匹配的条件，JSON格式',
+  '--assoc-filter <assocFilter>',
+  '关联文档搜索时要匹配的条件，JSON格式',
   parseJsonOption
 )
 program.option('--as-doc <asDoc...>', '作为文档处理的字段。')

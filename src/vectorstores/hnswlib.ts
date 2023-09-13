@@ -12,9 +12,9 @@ interface MetaFilter {
 export class HNSWLib2 {
   declare FilterType: (doc: Document) => boolean
   /**
-   * 未向量化文档
+   * 关联文档
    */
-  docstoreNonvec?: SynchronousInMemoryDocstore
+  docstoreAssoc?: SynchronousInMemoryDocstore
 
   constructor(public store: HNSWLib, public directory: string) {}
 
@@ -33,11 +33,11 @@ export class HNSWLib2 {
     /**
      * 未向量化文档资料
      */
-    let nonvec = path.resolve(directory, 'docstore-nonvec.json')
-    if (fs.existsSync(nonvec)) {
-      let buf = fs.readFileSync(nonvec, 'utf-8')
+    let assoc = path.resolve(directory, 'docstore-assoc.json')
+    if (fs.existsSync(assoc)) {
+      let buf = fs.readFileSync(assoc, 'utf-8')
       let docs = JSON.parse(buf.toString())
-      lib.docstoreNonvec = new SynchronousInMemoryDocstore(new Map(docs))
+      lib.docstoreAssoc = new SynchronousInMemoryDocstore(new Map(docs))
     }
     return lib
   }
@@ -60,7 +60,7 @@ export class HNSWLib2 {
    */
   async metadataSearch(
     filter: MetaFilter,
-    options = { fromNonvecStore: false }
+    options = { fromAssocStore: false }
   ): Promise<Document[]> {
     if (Object.keys(filter).length === 0)
       throw new Error('没有指定元数据检索条件')
@@ -74,8 +74,8 @@ export class HNSWLib2 {
 
     const matched = []
     const docSource =
-      options?.fromNonvecStore === true
-        ? this.docstoreNonvec?._docs
+      options?.fromAssocStore === true
+        ? this.docstoreAssoc?._docs
         : this.docstore._docs
 
     const docs = docSource?.values()

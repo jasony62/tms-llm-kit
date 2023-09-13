@@ -12,7 +12,7 @@ const debug = Debug('tms-llm-kit:retrieve:pipeline:metadata')
 interface MetadataRetrieveOptions {
   filter?: PointerFilter
   matchBy?: string[]
-  fromNonvecStore?: boolean
+  fromAssocStore?: boolean
   asDoc?: string[]
   asMeta?: string[]
 }
@@ -26,7 +26,7 @@ export class MetadataRetrieve extends RetrievePipeline {
 
   matchByPointers: jsonpointer[] | undefined
 
-  fromNonvecStore = false
+  fromAssocStore = false
 
   asDoc: string[] | undefined
 
@@ -39,7 +39,7 @@ export class MetadataRetrieve extends RetrievePipeline {
 
     super(vectorStore)
     if (options && typeof options === 'object') {
-      const { filter, matchBy, fromNonvecStore, asDoc, asMeta } = options
+      const { filter, matchBy, fromAssocStore, asDoc, asMeta } = options
       if (filter) {
         this.filter = typeof filter === 'string' ? JSON.parse(filter) : filter
       }
@@ -49,8 +49,8 @@ export class MetadataRetrieve extends RetrievePipeline {
           return jsonpointer.compile(p.indexOf('/') !== 0 ? '/' + p : p)
         })
       }
-      if (fromNonvecStore === true) {
-        this.fromNonvecStore = true
+      if (fromAssocStore === true) {
+        this.fromAssocStore = true
       }
       if (asDoc) {
         this.asDoc = asDoc
@@ -195,7 +195,7 @@ export class MetadataRetrieve extends RetrievePipeline {
         }
         debug(`本地非向量化文档检索条件\n%O`, matcher)
         let docs = await this.vectorStore?.metadataSearch(matcher, {
-          fromNonvecStore: this.fromNonvecStore,
+          fromAssocStore: this.fromAssocStore,
         })
         if (docs) {
           if (result) {
@@ -207,7 +207,7 @@ export class MetadataRetrieve extends RetrievePipeline {
       }
     } else if (this.filter) {
       result = await this.vectorStore?.metadataSearch(this.filter, {
-        fromNonvecStore: this.fromNonvecStore,
+        fromAssocStore: this.fromAssocStore,
       })
     }
     return result

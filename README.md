@@ -1,6 +1,6 @@
-`tms-llm-kit`以`langchain`为基础，实现了基于文件、`wikijs`、`tms-mongodb-web`等语料源建立和使用向量数据库的功能。
+`tms-llm-kit`以`langchain`为基础，实现了基于文件、`wikijs`、`mongodb`等语料源建立和使用向量数据库的功能。
 
-将文本资料加载到向量数据库中，可以实现语义搜索功能。资料中的内容向量化后用于语义搜索，元数据用于关键字匹配连接其他相关的数据。因此，加载资料时需要指定哪些部分是内容，哪些部分是元数据。语言大模型的向量空间是私有的，使用哪个大模型就要用它提供的接口做向量化。向量化接口有长度限制，执行向量计算前要将分档拆分为适当的大小。
+将文本资料加载到向量数据库中，可以实现语义搜索功能。资料中的内容向量化后用于语义搜索，元数据用于关键字匹配连接其他相关的数据。因此，加载资料时需要指定哪些部分是内容，哪些部分是元数据。语言大模型的向量空间是专有的，使用哪个大模型就要用它提供的接口做向量化。向量化接口有长度限制，执行向量计算前要将分档拆分为适当的大小。
 
 讯飞星火向量接口：
 
@@ -12,22 +12,22 @@
 - （2）每个文本长度不超过 384 个 token
 - （3）输入文本不能为空，如果为空会报错
 
-目前，支持加载的资料包括：csv 格式文件，json 格式文件和 wikijs 在线接口。
+目前，支持加载的资料包括：csv 格式文件，json 格式文件和 wikijs 在线接口，mongodb 的集合。
 
-目前，向量数据库使用`hnswlib`。它是个轻量级的内存数据库，可以把数据持久化在本地文件。
+目前，向量数据库使用`hnswlib`。它是个轻量级的内存数据库，数据持久化在本地文件。
 
-考虑到数据安全要求，用户有些用不希望发送给大模型。针对这种情况，支持将加载的资料分为向量化和非向量化两部分分别存储。非向量化的数据不会调用大模型的向量化接口，只是转换为标准文档格式存储。
+考虑到数据安全要求，用户有些数据不希望发送给大模型。针对这种情况，支持将加载的资料分为向量化和非向量化两部分分别存储。非向量化的数据不会调用大模型的向量化接口，只是转换为标准文档格式存储。
 
 构造好向量数据库后，就可以实现语义检索。目前支持：
 
 - 方式一：输入文本，按照语义从数据库中检索匹配的文档并返回文档。
-- 方式二：输入文本，按照语义从数据库中检索匹配的文档，将检索的文档作为提示内容传给大模型，由大生成回复内容。
-- 方式三：输入文本，按照语义从数据库中检索匹配的文档，根据文档的元数据，再非向量化文档库中按元数据检索。
+- 方式二：输入文本，按照语义从数据库中检索匹配的文档，将检索的文档作为提示内容传给大模型，由大模型生成回复内容。
+- 方式三：输入文本，按照语义从数据库中检索匹配的文档，根据文档的元数据，再从关联文档库中按元数据检索。
 - 方式四：直接输入元数据，从文档库中匹配文档。
 
 在`Q&A`的场景中，如果需要根据用户的输入，从某个文档中，例如：用户手册，直接匹配答案，那么就使用**方式一**。
 
-方式一有个缺陷，因为文档加载时需要根据大模型向量化接口的限制控制文本块的大小，所以向量对应的文本块可能不是完整的段落，不能直接作为回复，这种情况可以使用**方式四**，让语言大模型基于检索的内容生成更自然的答案。
+方式一有个缺陷，因为文档加载时需要根据大模型向量化接口的限制控制文本块的大小，所以向量对应的文本块可能不是完整的段落，不能直接作为回复，这种情况可以使用**方式二**，让语言大模型基于检索的内容生成更自然的答案。
 
 如果，原始的资料问题和答案是分开，且需要给用户返回标准的答案，那么就采用**方式三**。
 
@@ -169,10 +169,10 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 ]
 ```
 
-先根据输入的文本（text）和过滤条件（filter）搜索相似的文档，再用文档的元数据（nonvec-match）在非向量库中进行元数据搜索。
+先根据输入的文本（text）和过滤条件（filter）搜索相似的文档，再用文档的元数据（assoc-match）在非向量库中进行元数据搜索。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset nonvec-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --nonvec-match '/id' --nonvec-filter '{"/_pageContentSource":"a"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset assoc-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --assoc-match '/id' --assoc-filter '{"/_pageContentSource":"a"}'
 ```
 
 ```json
@@ -191,7 +191,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 将检索到的文本作为素材提供给大模型生成答案。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset llm-answer --text 风险
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset feed-llm --text 风险
 ```
 
 ```json
@@ -231,7 +231,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 根据指定的元数据过滤条件（filter），在非向量化文档库中搜索，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset meta-nonvec-doc --filter '{"/id":"1"}'
+DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset meta-assoc-doc --filter '{"/id":"1"}'
 ```
 
 ```json
@@ -247,17 +247,17 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 ]
 ```
 
-| 参数          | 说明                              | 类型 | 默认值 |
-| ------------- | --------------------------------- | ---- | ------ |
-| model         | 使用的语言大模型。                | 文本 | 无     |
-| store         | 向量数据目录地址。                | 文本 | 无     |
-| perset        | 预定义的检索方式。                | 文本 | 无     |
-| text          | 检索条件。                        | 文本 | 无     |
-| filter        | 文档过滤条件。JSON 格式的字符串。 | JSON | 无     |
-| nonvec-match  | 文档匹配字段。                    | 数组 | 无     |
-| nonvec-filter | 文档过滤条件。JSON 格式的字符串。 | JSON | 无     |
-| as-doc        | 原始数据中作为文档处理的字段。    | 数组 |        |
-| as-meta       | 原始数据中作为元数据处理的字段。  | 数组 |        |
+| 参数         | 说明                                  | 类型 | 默认值 |
+| ------------ | ------------------------------------- | ---- | ------ |
+| model        | 使用的语言大模型。                    | 文本 | 无     |
+| store        | 向量数据目录地址。                    | 文本 | 无     |
+| perset       | 预定义的检索方式。                    | 文本 | 无     |
+| text         | 检索条件。                            | 文本 | 无     |
+| filter       | 文档过滤条件。JSON 格式的字符串。     | JSON | 无     |
+| assoc-match  | 关联文档匹配字段。                    | 数组 | 无     |
+| assoc-filter | 关联文档过滤条件。JSON 格式的字符串。 | JSON | 无     |
+| as-doc       | 原始数据中作为文档处理的字段。        | 数组 |        |
+| as-meta      | 原始数据中作为元数据处理的字段。      | 数组 |        |
 
 **注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
 

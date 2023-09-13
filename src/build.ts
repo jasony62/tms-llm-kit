@@ -163,7 +163,7 @@ if (DocField) {
   }
   docstore2.add(toSave)
   await fs.writeFileSync(
-    path.join(StorePath, 'docstore-nonvec.json'),
+    path.join(StorePath, 'docstore-assoc.json'),
     JSON.stringify(Array.from(docstore2._docs.entries()))
   )
 }
