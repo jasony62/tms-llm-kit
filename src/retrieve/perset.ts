@@ -20,8 +20,8 @@ class VectorDoc extends RetrievePerset {
     super('vector-doc', vectorStore)
   }
   async run(text: string): Promise<Document[]> {
-    const { filter, numStuff } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
+    const { filter, numFeedLlm } = this.options
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numFeedLlm })
     let result = await pipeline.run(text)
     return result
   }
@@ -34,9 +34,9 @@ class AssocDoc extends RetrievePerset {
     super('assoc-doc', vectorStore)
   }
   async run(text: string): Promise<Document[]> {
-    const { filter, numStuff, assocMatch, assocFilter, asDoc, asMeta } =
+    const { filter, numFeedLlm, assocMatch, assocFilter, asDoc, asMeta } =
       this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numFeedLlm })
     let pipeline2 = new MetadataRetrieve(this.vectorStore, {
       matchBy: assocMatch,
       filter: assocFilter,
@@ -57,8 +57,8 @@ class FeedLlm extends RetrievePerset {
     super('feed-llm', vectorStore)
   }
   async run(text: string): Promise<Document[]> {
-    const { filter, numStuff, model } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numStuff })
+    const { filter, numFeedLlm, model } = this.options
+    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numFeedLlm })
     let modelName = model as string
     let pipeline2 = new LLMAnswer(text, { modelName })
     pipeline.next = pipeline2
