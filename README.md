@@ -262,7 +262,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 | filter          | 文档过滤条件。JSON 格式的字符串。`jsonpointer`表示属性名和等于值的 JSON 对象。 | JSON    | 无     |
 | assoc-match     | 关联文档匹配字段。                                                             | 数组    | 无     |
 | assoc-filter    | 关联文档过滤条件。JSON 格式的字符串。                                          | JSON    | 无     |
-| as-doc          | 原始数据中作为文档处理的字段。                                                 | 数组    |        |
+| as-doc          | 原始数据中作为文档处理的字段。只支持根字段名。                                 | 数组    |        |
 | retrieve-object | 返回关联文档的对象。包含的字段由 as-doc 指定。                                 | boolean |        |
 | as-meta         | 原始数据中作为元数据处理的字段。                                               | 数组    |        |
 
@@ -274,6 +274,22 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 
 ```shell
 node ./dist/embedding --model baiduwenxin --text 介绍语言大模型
+```
+
+# 作为包使用
+
+## 构造向量数据库
+
+```ts
+import { buildFromMongo } =from 'tms-llm-kit'
+```
+
+## 检索数据
+
+```ts
+import { runPerset } from 'tms-llm-kit'
+
+result = await runPerset(perset, config, question, modelName)
 ```
 
 # 构造 docker 镜像

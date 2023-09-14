@@ -4,12 +4,14 @@ import fs from 'fs'
 import { runPerset } from './retrieve/perset.js'
 
 /**
- * 将json格式的参数转为json对象
+ * 将filter/assocFilter参数转换为对象
  * @param value
  * @returns
  */
-function parseJsonOption(value: string) {
-  return value ? JSON.parse(value) : undefined
+function parseJsonOptions(value: string) {
+  let obj = value ? JSON.parse(value) : undefined
+  if (!obj || typeof obj !== 'object') return undefined
+  return obj
 }
 
 program.requiredOption('--store <directory>', '向量数据库的存储位置')
@@ -26,16 +28,16 @@ program.option(
 program.option(
   '--filter <filter>',
   '向量数据库文档元数据筛选条件',
-  parseJsonOption
+  parseJsonOptions
 )
 program.option(
   '--assoc-match <assocMatch...>',
-  '向量数据库中搜索的文档，作为关联数据库搜索时匹配条件的字段，空格分隔多个字段'
+  '向量数据库中搜索的文档作为关联数据库搜索时匹配条件的字段，空格分隔多个字段'
 )
 program.option(
   '--assoc-filter <assocFilter>',
   '关联文档搜索时要匹配的条件，JSON格式',
-  parseJsonOption
+  parseJsonOptions
 )
 program.option('--as-doc <asDoc...>', '作为文档处理的字段。')
 program.option('--retrieve-object', '作为文档处理的字段。')

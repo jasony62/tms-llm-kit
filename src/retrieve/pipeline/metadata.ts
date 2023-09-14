@@ -49,9 +49,7 @@ export class MetadataRetrieve extends RetrievePipeline {
       }
       if (matchBy) {
         this.matchBy = matchBy
-        this.matchByPointers = matchBy.map((p) => {
-          return jsonpointer.compile(p.indexOf('/') !== 0 ? '/' + p : p)
-        })
+        this.matchByPointers = matchBy.map((p) => jsonpointer.compile(p))
       }
       if (fromAssocStore === true) {
         this.fromAssocStore = true

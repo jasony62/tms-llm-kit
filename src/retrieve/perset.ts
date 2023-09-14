@@ -7,6 +7,8 @@ import {
 } from './pipeline/index.js'
 import { getEmbedding } from '../embeddings/index.js'
 
+import { reviceJPArray, reviseJPObject } from '../utils/index.js'
+
 abstract class RetrievePerset {
   constructor(public name: string, public vectorStore: HNSWLib2) {}
 
@@ -105,13 +107,31 @@ class MetaAssocDoc extends RetrievePerset {
     return result
   }
 }
-
+/**
+ * 检索
+ *
+ * @param name
+ * @param options
+ * @param text
+ * @param model
+ * @returns
+ */
 export async function runPerset(
   name: string,
   options: Record<string, any>,
   text?: string,
   model?: string
 ) {
+  if (options.filter && typeof options.filter === 'object') {
+    options.filter = reviseJPObject(options.filter)
+  }
+  if (options.assocFilter && typeof options.assocFilter === 'object') {
+    options.assocFilter = reviseJPObject(options.assocFilter)
+  }
+  if (Array.isArray(options.assocMatch)) {
+    options.assocMatch = reviceJPArray(options.assocMatch)
+  }
+
   let persetClass: any
   switch (name) {
     case 'vector-doc':
