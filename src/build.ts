@@ -53,7 +53,7 @@ if (/json|csv/.test(LoaderType)) {
  * 要进行向量化的资料
  */
 const { docs, loader } = await runLoad(LoaderType, options)
-// console.log('加载结果：\n', docs)
+console.log('加载结果：\n', docs)
 
 const { store: StorePath, model: ModelName } = options
 
@@ -65,7 +65,7 @@ if (StorePath && ModelName) {
       chunkSize,
       chunkOverlap,
     },
-    LoaderType === 'mongodb' ? loader : undefined
+    ['mongodb', 'wikijs'].includes(LoaderType) ? loader : undefined
   )
 }
 /**

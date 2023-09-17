@@ -34,6 +34,16 @@ export class WikijsPageLoader extends BaseDocumentLoader {
     this.docTransform = DocTransform.create(asVec, asMeta)
   }
 
+  toJSON() {
+    return {
+      loaderName: 'WikijsPageLoader',
+      url: this.wikijsUrl,
+      apiKey: this.wikijsApiKey,
+      vecFields: this.docTransform.vecFields.ptNames,
+      metaFields: this.docTransform.metaFields?.ptNames,
+    }
+  }
+
   async fetchWikijs(body: string) {
     const headers: any = {
       'Content-Type': 'application/json',

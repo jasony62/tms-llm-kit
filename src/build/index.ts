@@ -7,19 +7,24 @@ import { Document } from 'langchain/document'
  *
  * @param tmwUrl
  * @param accessToken
- * @param vecField
- * @param metaField
+ * @param vecFields
+ * @param metaFields
  */
 export async function buildFromTmw(
   tmwUrl: string,
   accessToken: string,
-  vecField: string,
-  metaField: string,
+  vecFields: string[] | string,
+  metaFields: string[] | string,
   storePath?: string,
   modelName?: string,
   options?: any
 ): Promise<Document[]> {
-  let loader = new TmwCollectionLoader(tmwUrl, accessToken, vecField, metaField)
+  let loader = new TmwCollectionLoader(
+    tmwUrl,
+    accessToken,
+    vecFields,
+    metaFields
+  )
 
   const docs = await loader.load()
   if (storePath && modelName) {
@@ -37,8 +42,8 @@ export async function buildFromTmw(
  * @param url
  * @param dbName
  * @param clName
- * @param vecField
- * @param metaField
+ * @param vecFields
+ * @param metaFields
  * @param storePath
  * @param modelName
  * @param options
@@ -48,8 +53,8 @@ export async function buildFromMongo(
   url: string,
   dbName: string,
   clName: string,
-  vecField: string,
-  metaField: string,
+  vecFields: string[] | string,
+  metaFields: string[] | string,
   storePath?: string,
   modelName?: string,
   options?: any
@@ -58,8 +63,8 @@ export async function buildFromMongo(
     url,
     dbName,
     clName,
-    vecField,
-    metaField
+    vecFields,
+    metaFields
   )
   const docs = await loader.load()
 

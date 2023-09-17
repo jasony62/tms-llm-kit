@@ -6,7 +6,6 @@ import fs from 'fs'
 import { Collection } from 'mongodb'
 
 import Debug from 'debug'
-import { constants } from 'buffer'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline:metadata')
 
@@ -244,6 +243,67 @@ export class MetadataRetrieve extends RetrievePipeline {
     return result
   }
   /**
+   * 从wikijs中获得关联数据
+   * @param documents
+   */
+  private async _fetchWikijs(documents?: Document[]) {
+    const wikijsArgs = this.loaderArgs
+    if (!wikijsArgs || typeof wikijsArgs !== 'object')
+      throw new Error('没有提供wikijs参数')
+
+    const fetchWikijs = async (body: string) => {
+      const headers: any = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${wikijsArgs.apiKey}`,
+      }
+      const response = await fetch(wikijsArgs.url, {
+        method: 'POST',
+        headers,
+        body,
+      })
+
+      let { status, statusText } = response
+      if (status !== 200) {
+        throw new Error('调用API发生错误，原因：' + statusText)
+      }
+
+      const json = await response.json()
+
+      return json
+    }
+
+    let result: any
+    if (Array.isArray(documents)) {
+      for (let doc of documents) {
+        let { id } = doc.metadata
+        if (!id) continue
+        let body = JSON.stringify({
+          query: `{pages{single(id:${id}){id\npath\ntitle\ndescription\ncreatedAt\nupdatedAt\ncontent}}}`,
+        })
+        let json = await fetchWikijs(body)
+        let page = json.data.pages.single
+        if (this.retrieveObject === true) {
+          let assocDoc = await this.convertRawDoc2Document(
+            page,
+            this.asDoc,
+            this.asMeta
+          )
+          result ? result.push(assocDoc) : (result = [assocDoc])
+        } else {
+          let assocDocs = this.splitRawDoc2Documents(
+            page,
+            this.asDoc,
+            this.asMeta
+          )
+          result ? result.push(...assocDocs) : (result = assocDocs)
+        }
+      }
+    }
+
+    return result
+  }
+  /**
    * 从本地获取文档数据
    *
    * @param documents
@@ -321,6 +381,9 @@ export class MetadataRetrieve extends RetrievePipeline {
     switch (this.loaderName) {
       case 'MongodbCollectionLoader':
         result = await this._fetchMongo(documents)
+        break
+      case 'WikijsPageLoader':
+        result = await this._fetchWikijs(documents)
         break
       default:
         result = await this._fetchLocal(documents)

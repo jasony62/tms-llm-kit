@@ -29,8 +29,8 @@ export class MongodbCollectionLoader extends BaseDocumentLoader {
       connUri: this.connUri,
       dbName: this.dbName,
       clName: this.clName,
-      vecPts: this.docTransform.vecFields.ptNames,
-      metaPts: this.docTransform.metaFields?.ptNames,
+      vecFields: this.docTransform.vecFields.ptNames,
+      metaFields: this.docTransform.metaFields?.ptNames,
     }
   }
 

@@ -167,16 +167,16 @@ DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/docu
 
 ## 命令使用的参数如下
 
-| 参数     | 说明                                         | 类型 | 默认值 |
-| -------- | -------------------------------------------- | ---- | ------ |
-| type     | 数据类型，支持：json，csv，wikijs，mongodb。 |      | 无     |
-| file     | 要加载的文件路径，适用于 json 和 csv。       |      | 无     |
-| url      | wikijs 的 api 地址。mongodb 的连接地址。     |      | 无     |
-| as-vec   | 作为向量处理的字段。                         | 数组 |        |
-| as-assoc | 作为关联文档处理的字段。                     | 数组 |        |
-| as-meta  | 作为元数据处理的字段。                       | 数组 |        |
-| store    | 生成的向量数据库存储路径。                   |      | 无     |
-| model    | 使用的语言大模型。                           |      | 无     |
+| 参数     | 说明                                                                | 类型 | 默认值 |
+| -------- | ------------------------------------------------------------------- | ---- | ------ |
+| type     | 数据类型，支持：json，csv，wikijs，mongodb。                        |      | 无     |
+| file     | 要加载的文件路径，适用于 json 和 csv。                              |      | 无     |
+| url      | wikijs 的 api 地址。mongodb 的连接地址。                            |      | 无     |
+| as-vec   | 输入数据中作为向量处理的字段。                                      | 数组 |        |
+| as-meta  | 输入数据中作为元数据处理的字段。                                    | 数组 |        |
+| as-assoc | 输入数据中作为关联文档处理的字段。仅在`type`是`json`和`csv`时有效。 | 数组 |        |
+| store    | 生成的向量数据库存储路径。                                          |      | 无     |
+| model    | 使用的语言大模型。                                                  |      | 无     |
 
 字段：csv 文件中的列，json 对象的字段路径。
 
@@ -304,6 +304,8 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 
 如果指定了`as-doc`参数，那么，获得获取关联数据后，根据`as-doc`指定的字段提取数据，如果指定`retrieve-object`参数，那么由`as-doc`参数指定的字段构成`pageContent`的内容，以 JSON 格式的字符串作为结果；如果没有指定`retrieve-object`参数，那么，`as-doc`指定的每个字段作为独立的文档返回；如果没有指定`as-doc`参数，那么`pageContent`为空，如果指定了`as-meta`参数，`as-meta`指定的字段作为`metadata`返回，否则，整个数据作为`metadata`返回。
 
+## 从`mongodb`检索关联数据
+
 从`mongodb`数据库中检索关联文档，不指定参数`as-doc`，`as-meta`，`retrieve-object`参数
 
 ```shell
@@ -409,6 +411,71 @@ node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text
     "pageContent": "{\"/answer\":\"生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。\",\"/question\":\"语言大模型有哪些风险\"}",
     "metadata": {
       "/_id": "64fffae6375aa0cf0f71586f"
+    }
+  }
+]
+```
+
+## 从`wikijs`检索管理数据
+
+以`wikijs`作为数据源时，`assoc-match`参数无效，目前，仅通过`id`字段进行匹配。
+
+```shell
+node ./dist/retrieve --model xunfeispark --store /Users/yangyue/project/tms-llm-kit/store/wikijs-xf --perset assoc-doc --text 企业数字化 --as-doc content
+```
+
+指定了`as-doc`参数，控制输出的内容
+
+```json
+[
+  {
+    "pageContent": "<...>",
+    "metadata": {
+      "id": 82,
+      "path": "<...>",
+      "title": "<...>",
+      "description": "<...>",
+      "createdAt": "2023-07-13T03:16:54.220Z",
+      "updatedAt": "2023-07-13T03:47:03.086Z",
+      "_pageContentSource": "/content"
+    }
+  }
+]
+```
+
+指定了`as-doc`和`as-meta`参数，控制输出的内容
+
+```shell
+ node ./dist/retrieve --model xunfeispark --store /Users/yangyue/project/tms-llm-kit/store/wikijs-xf --perset assoc-doc --text 企业数字化 --as-doc content --as-meta path
+```
+
+```json
+[
+  {
+    "pageContent": "<...>",
+    "metadata": {
+      "/path": "<...>",
+      "_pageContentSource": "<...>"
+    }
+  }
+]
+```
+
+`as-doc`参数指定了多个字段，`retrieve-object`参数控制结果作为对象返回（而不是 3 个独立的结果）。
+
+```shell
+node ./dist/retrieve --model xunfeispark --store <xxx> --perset assoc-doc --text 企业数字化 --assoc-match _id --as-doc title path content --retrieve-object
+```
+
+```json
+[
+  {
+    "pageContent": "{\"/title\":\"...\",\"/path\":\"...\",\"/content\":\"...\"}",
+    "metadata": {
+      "id": 82,
+      "description": "",
+      "createdAt": "2023-07-13T03:16:54.220Z",
+      "updatedAt": "2023-07-13T03:47:03.086Z"
     }
   }
 ]
