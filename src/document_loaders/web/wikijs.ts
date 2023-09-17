@@ -1,10 +1,7 @@
 import { BaseDocumentLoader } from 'langchain/document_loaders'
 import { Document } from 'langchain/document'
+import { DocTransform } from '../../utils/index.js'
 
-interface GetPageResponse {
-  content: string
-  metadata: { [key: string]: any }
-}
 interface WikijsPage {
   id: number
   path: string
@@ -24,8 +21,17 @@ interface WikijsPageSimple {
 }
 
 export class WikijsPageLoader extends BaseDocumentLoader {
-  constructor(private wikijsUrl: string, private wikijsApiKey: string) {
+  docTransform: DocTransform
+
+  constructor(
+    private wikijsUrl: string,
+    private wikijsApiKey: string,
+    asVec: string | string[] = ['content'],
+    asMeta: string | string[] = ['id']
+  ) {
     super()
+    // 提取页面对象的content字段作为向量
+    this.docTransform = DocTransform.create(asVec, asMeta)
   }
 
   async fetchWikijs(body: string) {
@@ -39,6 +45,11 @@ export class WikijsPageLoader extends BaseDocumentLoader {
       headers,
       body,
     })
+
+    let { status, statusText } = response
+    if (status !== 200) {
+      throw new Error('调用API发生错误，原因：' + statusText)
+    }
 
     const json = await response.json()
 
@@ -54,7 +65,7 @@ export class WikijsPageLoader extends BaseDocumentLoader {
     })
     let json = await this.fetchWikijs(body)
 
-    // console.log(JSON.stringify(json, null, 2))
+    console.log(JSON.stringify(json, null, 2))
 
     return json.data.pages.single
   }
@@ -74,32 +85,22 @@ export class WikijsPageLoader extends BaseDocumentLoader {
   /**
    *
    */
-  private async processRepo(): Promise<GetPageResponse[]> {
+  private async processRepo(): Promise<Document[]> {
     const pages: WikijsPageSimple[] = await this.fetchAll()
 
-    let docs = []
-    for (let { id } of pages) {
-      let page = await this.fetchOne(id)
-      let metadata = { ...page, content: undefined }
-      let doc = {
-        content: page.content ?? '',
-        metadata,
-      }
-      docs.push(doc)
+    let result: Document[] = []
+    for await (let page of pages) {
+      let page2 = await this.fetchOne(page.id)
+      let docs = this.docTransform.exec(page2)
+      result.push(...docs)
     }
-    return docs
+    return result
   }
   /**
    * 执行文档加载
    * @returns
    */
   public async load(): Promise<Document[]> {
-    return (await this.processRepo()).map(
-      (pageResponse) =>
-        new Document({
-          pageContent: pageResponse.content,
-          metadata: pageResponse.metadata,
-        })
-    )
+    return await this.processRepo()
   }
 }

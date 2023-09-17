@@ -1,6 +1,6 @@
 import { BaseDocumentLoader } from 'langchain/document_loaders/base'
 import { Document } from 'langchain/document'
-import jsonpointer from 'jsonpointer'
+import { DocTransform } from '../../utils/index.js'
 
 /**
  * tmw查询文档
@@ -24,30 +24,16 @@ interface TmwDocQueryResponse {
  * tms-mongodb-web集合内容加载
  */
 export class TmwCollectionLoader extends BaseDocumentLoader {
-  vecPts: string[]
-  metaPts: string[]
-  compiledVecPts: jsonpointer[]
-  compiledMetaPts: jsonpointer[]
+  docTransform: DocTransform
 
   constructor(
     private tmwUrl: string,
     private tmwAccessToken: string,
-    vecPts: string | string[] = [],
-    metaPts: string | string[] = []
+    asVec: string | string[] = [],
+    asMeta: string | string[] = []
   ) {
     super()
-    this.vecPts = Array.isArray(vecPts) ? vecPts : vecPts.split(',')
-    this.metaPts = Array.isArray(metaPts) ? metaPts : metaPts.split(',')
-    this.compiledVecPts = this.vecPts.map((p) => {
-      return /^\//.test(p)
-        ? jsonpointer.compile(p)
-        : jsonpointer.compile('/' + p)
-    })
-    this.compiledMetaPts = this.metaPts.map((p) => {
-      return /^\//.test(p)
-        ? jsonpointer.compile(p)
-        : jsonpointer.compile('/' + p)
-    })
+    this.docTransform = DocTransform.create(asVec, asMeta)
   }
 
   async fetchTmwDocs(): Promise<TmwDoc[]> {
@@ -61,41 +47,21 @@ export class TmwCollectionLoader extends BaseDocumentLoader {
       headers,
     })
 
-    const json: TmwDocQueryResponse = await response.json()
+    let { status, statusText } = response
 
-    let docs = json.result.docs
+    if (status !== 200) {
+      throw new Error('调用API发生错误，原因：' + statusText)
+    }
+
+    const json: TmwDocQueryResponse = await response.json()
+    let { code, msg, result } = json
+    if (code !== 0) {
+      throw new Error('调用API返回结果错误，原因：' + msg)
+    }
+
+    let { docs } = result
 
     return docs
-  }
-  /**
-   * 处理单条文档
-   */
-  private processDocument(tmwDoc: TmwDoc): Document[] {
-    let metadata: Record<string, string> // 文档元数据
-    if (this.compiledMetaPts.length) {
-      metadata = this.compiledMetaPts.reduce((m: any, p: jsonpointer) => {
-        p.set(m, p.get(tmwDoc))
-        return m
-      }, {})
-    } else {
-      metadata = { ...tmwDoc }
-    }
-    // 每个向量化的字段生成1个稳单
-    if (this.compiledVecPts.length) {
-      const vecDocs = this.compiledVecPts.map((p: jsonpointer, index) => {
-        let pageContent = p.get(tmwDoc)
-        return new Document({
-          metadata: {
-            ...metadata,
-            _pageContentSource: this.vecPts[index],
-          },
-          pageContent,
-        })
-      })
-      return vecDocs
-    }
-
-    return []
   }
   /**
    * 处理集合中的文档
@@ -103,12 +69,11 @@ export class TmwCollectionLoader extends BaseDocumentLoader {
   private async processCollection(): Promise<Document[]> {
     const tmwDocs: TmwDoc[] = await this.fetchTmwDocs()
 
-    let docs = []
-    for (let tmwDoc of tmwDocs) {
-      let doc = this.processDocument(tmwDoc)
-      docs.push(...doc)
-    }
-    return docs
+    return tmwDocs.reduce((result, tmwDoc) => {
+      let docs = this.docTransform.exec(tmwDoc)
+      result.push(...docs)
+      return result
+    }, [] as Document[])
   }
   /**
    * 执行文档加载

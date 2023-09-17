@@ -3,21 +3,26 @@ import { program } from 'commander'
 import fs from 'fs'
 import path from 'path'
 
-import { BaseDocumentLoader } from 'langchain/document_loaders'
 import { SynchronousInMemoryDocstore } from 'langchain/stores/doc/in_memory'
 import { Document } from 'langchain/document'
 import { createStorer } from './build/store.js'
-
-import Debug from 'debug'
-
-const debug = Debug('build')
+import { runLoad } from './build/load.js'
 
 program.requiredOption('-t, --type <modelName>', '文件类型，json或csv或wikijs')
 program.option('-f, --file <file>', '要加载的文件')
 program.option('--url <url>', 'wikijs的api地址')
-program.option('--as-vec <asVec>', '作为向量处理的字段。')
-program.option('--as-assoc <asAssoc>', '作为文档处理的字段。')
-program.option('--as-meta <asMeta>', '作为元数据处理的字段。')
+program.option(
+  '--as-vec <asVec...>',
+  '作为向量处理的字段列表，空格分隔多个字段。'
+)
+program.option(
+  '--as-meta <asMeta...>',
+  '作为元数据处理的字段，空格分隔多个字段。'
+)
+program.option(
+  '--as-assoc <asAssoc...>',
+  '作为文档处理的字段，空格分隔多个字段。'
+)
 program.option('--store <store>', '向量数据库的存储位置')
 program.option(
   '--model <model>',
@@ -47,64 +52,8 @@ if (/json|csv/.test(LoaderType)) {
 /**
  * 要进行向量化的资料
  */
-const { asVec, asMeta } = options
-
-debug(`加载类型为【${LoaderType}】的数据`)
-
-let loader: BaseDocumentLoader | undefined
-switch (LoaderType) {
-  case 'json':
-    const { JSONLoader } = await import('./document_loaders/fs/json.js')
-    loader = new JSONLoader(FilePath, asVec, asMeta)
-    break
-  case 'csv':
-    {
-      const { CSVLoader } = await import('./document_loaders/fs/csv.js')
-      let options = {
-        column: asVec ?? undefined,
-        meta: asMeta ?? undefined,
-      }
-      loader = new CSVLoader(FilePath, options)
-    }
-    break
-  case 'wikijs':
-    const { WikijsPageLoader } = await import(
-      './document_loaders/web/wikijs.js'
-    )
-    const wikiUrl = options.url
-    const wikijsApiKey = process.env.WIKIJS_API_KEY
-    if (wikiUrl && wikijsApiKey) {
-      loader = new WikijsPageLoader(wikiUrl, wikijsApiKey)
-    }
-    break
-  case 'tmw':
-    const { TmwCollectionLoader } = await import(
-      './document_loaders/web/tmw.js'
-    )
-    const tmwUrl = options.url
-    const tmwAccessToken = process.env.TMW_ACCESS_TOKEN
-    if (tmwUrl && tmwAccessToken) {
-      loader = new TmwCollectionLoader(tmwUrl, tmwAccessToken, asVec, asMeta)
-    }
-    break
-  case 'mongodb':
-    const { MongodbCollectionLoader } = await import(
-      './document_loaders/db/mongodb.js'
-    )
-    const { url, dbName, clName } = options
-    if (url && dbName && clName) {
-      loader = new MongodbCollectionLoader(url, dbName, clName, asVec, asMeta)
-    }
-    break
-}
-
-if (!loader) {
-  console.log('创建加载器失败')
-  process.exit(0)
-}
-
-const docs = await loader.load()
-console.log('加载结果：\n', docs)
+const { docs, loader } = await runLoad(LoaderType, options)
+// console.log('加载结果：\n', docs)
 
 const { store: StorePath, model: ModelName } = options
 
@@ -123,35 +72,22 @@ if (StorePath && ModelName) {
  * 要进行文档化的资料
  */
 const { asAssoc } = options
-if (asAssoc) {
-  switch (LoaderType) {
-    case 'json':
-      const { JSONLoader } = await import('./document_loaders/fs/json.js')
-      loader = new JSONLoader(FilePath, asAssoc, asMeta)
-      break
-    case 'csv':
-      {
-        const { CSVLoader } = await import('./document_loaders/fs/csv.js')
-        let options = {
-          column: asAssoc ?? undefined,
-          meta: asMeta ?? undefined,
-        }
-        loader = new CSVLoader(FilePath, options)
-      }
-      break
-  }
+if (asAssoc && ['json', 'csv'].includes(LoaderType)) {
+  let { docs: assocDocs } = await runLoad(LoaderType, {
+    ...options,
+    asVec: asAssoc,
+  })
 
-  const docs2 = await loader.load()
-  console.log('加载结果：\n', docs2)
+  console.log('关联文档加载结果：\n', assocDocs)
 
-  let docstore2: SynchronousInMemoryDocstore = new SynchronousInMemoryDocstore()
+  let docstore: SynchronousInMemoryDocstore = new SynchronousInMemoryDocstore()
   const toSave: Record<string, Document> = {}
-  for (let i = 0; i < docs2.length; i += 1) {
-    toSave[i] = docs2[i]
+  for (let i = 0; i < assocDocs.length; i += 1) {
+    toSave[i] = assocDocs[i]
   }
-  docstore2.add(toSave)
+  docstore.add(toSave)
   await fs.writeFileSync(
     path.join(StorePath, 'docstore-assoc.json'),
-    JSON.stringify(Array.from(docstore2._docs.entries()))
+    JSON.stringify(Array.from(docstore._docs.entries()))
   )
 }

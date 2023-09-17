@@ -79,35 +79,57 @@ S5 --> Z
 
 执行如下命令加载文件，并生成向量数据库。
 
-字段`q`和字段`a`都执行向量化，可通过语义检索；字段`id`作为元数据。
+## `csv`文件，字段`q`和字段`a`都执行向量化，可通过语义检索；字段`id`作为元数据。
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q,a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q a --as-meta id --store ./store/data01-faq-wx --model baiduwenxin
 ```
+
+```shell
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q a --as-meta id --store ./store/data01-faq-xf --model xunfeispark
+```
+
+## `json`文件，字段`q`和字段`a`都执行向量化，可通过语义检索；字段`id`作为元数据。
 
 ```shell
 DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q,a --as-meta id --store ./store/data02-faq-wx --model baiduwenxin
 ```
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q,a --as-meta id --store ./store/data01-faq-xf --model xunfeispark
+DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q a --as-meta id --store ./store/data02-faq-xf --model xunfeispark
+```
+
+## `csv`文件，字段`q`执行向量化，可通过语义检索；字段`a`直接保存为文档，仅可通过元数据检索；字段`id`作为元数据。
+
+```shell
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data01-faq-assoc-wx --model baiduwenxin
 ```
 
 ```shell
-DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q,a --as-meta id --store ./store/data02-faq-xf --model xunfeispark
+DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data01-faq-assoc-xf --model xunfeispark
 ```
 
-字段`q`执行向量化，可通过语义检索；字段`a`直接保存为文档，仅可通过元数据检索；字段`id`作为元数据。
+## `json`文件，字段`q`执行向量化，可通过语义检索；字段`a`直接保存为文档，仅可通过元数据检索；字段`id`作为元数据。
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data03-faq-wx --model baiduwenxin
+DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q --as-assoc a --as-meta id --store ./store/data02-faq-assoc-wx --model baiduwenxin
 ```
 
 ```shell
-DEBUG=* node ./dist/build --type csv --file ./sample/data01-faq.csv --as-vec q --as-assoc a --as-meta id --store ./store/data03-faq-xf --model xunfeispark
+DEBUG=* node ./dist/build --type json --file ./sample/data02-faq.json --as-vec q --as-assoc a --as-meta id --store ./store/data02-faq-assoc-xf --model xunfeispark
 ```
 
-从`wikijs`加载，不支持非向量化文档。
+## 从`mongodb`加载
+
+```shell
+DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name llmqadb --cl-name llmqa --as-meta _id --as-vec question answer --model baiduwenxin --store ./store/mongodb-wx
+```
+
+```shell
+DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name llmqadb --cl-name llmqa --as-meta _id --as-vec question answer --model baiduwenxin --store ./store/mongodb-xf
+```
+
+## 从`wikijs`加载，不支持非向量化文档。
 
 ```shell
 DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-wx --model baiduwenxin
@@ -117,36 +139,46 @@ DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --
 DEBUG=* node ./dist/build --type wikijs --url 'http://localhost:8444/graphql' --store ./store/wikijs-xf --model xunfeispark
 ```
 
-从`tms-mongodb-web`加载
+`wikijs`单篇文档包含的字段，若不指定`asVec`和`asMeta`参数，`content`作为向量字段，`id`作为元数据字段。
 
-```shell
-DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/document/list?db=e2e5gmx&cl=dialog_script' --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/tmw-wx
+```json
+{
+  "id": 3,
+  "path": "xxx",
+  "title": "xxx",
+  "description": "",
+  "createdAt": "2023-03-26T01:39:30.881Z",
+  "updatedAt": "2023-03-26T01:39:34.253Z",
+  "content": "xxx"
+}
 ```
 
-从`mongodb`加载
+参考：
+
+https://docs.requarks.io/dev/api
+
+## 从`tms-mongodb-web`加载
 
 ```shell
-DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name e2e5gmx --cl-name rcs_file --as-meta _id,name --as-vec title,remark --model baiduwenxin --store ./store/mongodb-wx
+DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/document/list?db=e2e5gmx&cl=dialog_script' --as-meta _id name --as-vec title remark --model baiduwenxin --store ./store/tmw-wx
 ```
 
-命令使用的参数如下：
+需要用环境变量`TMW_ACCESS_TOKEN`，指定 API 的访问令牌。
+
+## 命令使用的参数如下
 
 | 参数     | 说明                                         | 类型 | 默认值 |
 | -------- | -------------------------------------------- | ---- | ------ |
 | type     | 数据类型，支持：json，csv，wikijs，mongodb。 |      | 无     |
 | file     | 要加载的文件路径，适用于 json 和 csv。       |      | 无     |
 | url      | wikijs 的 api 地址。mongodb 的连接地址。     |      | 无     |
-| as-vec   | 作为向量处理的字段。                         |      |        |
+| as-vec   | 作为向量处理的字段。                         | 数组 |        |
 | as-assoc | 作为关联文档处理的字段。                     | 数组 |        |
 | as-meta  | 作为元数据处理的字段。                       | 数组 |        |
 | store    | 生成的向量数据库存储路径。                   |      | 无     |
 | model    | 使用的语言大模型。                           |      | 无     |
 
 字段：csv 文件中的列，json 对象的字段路径。
-
-参考：
-
-https://docs.requarks.io/dev/api
 
 # 检索数据
 
@@ -269,6 +301,118 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 **注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
 
 参考：https://www.npmjs.com/package/jsonpointer
+
+如果指定了`as-doc`参数，那么，获得获取关联数据后，根据`as-doc`指定的字段提取数据，如果指定`retrieve-object`参数，那么由`as-doc`参数指定的字段构成`pageContent`的内容，以 JSON 格式的字符串作为结果；如果没有指定`retrieve-object`参数，那么，`as-doc`指定的每个字段作为独立的文档返回；如果没有指定`as-doc`参数，那么`pageContent`为空，如果指定了`as-meta`参数，`as-meta`指定的字段作为`metadata`返回，否则，整个数据作为`metadata`返回。
+
+从`mongodb`数据库中检索关联文档，不指定参数`as-doc`，`as-meta`，`retrieve-object`参数
+
+```shell
+node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mongodb-web/temp/vecdb/llmqadb/llmqa --perset assoc-doc --text 风险 --assoc-match '_id'
+```
+
+```json
+[
+  {
+    "metadata": {
+      "_id": "64fffae6375aa0cf0f71586f",
+      "question": "语言大模型有哪些风险",
+      "answer": "生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。",
+      "TMW_CREATE_TIME": "2023-09-12 13:45:10"
+    }
+  }
+]
+```
+
+指定了`as-doc`
+
+```shell
+node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mongodb-web/temp/vecdb/llmqadb/llmqa --perset assoc-doc --text 风险 --assoc-match '_id' --as-doc 'answer'
+```
+
+```json
+[
+  {
+    "pageContent": "生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。",
+    "metadata": {
+      "_id": "64fffae6375aa0cf0f71586f",
+      "question": "语言大模型有哪些风险",
+      "TMW_CREATE_TIME": "2023-09-12 13:45:10",
+      "_pageContentSource": "/answer"
+    }
+  }
+]
+```
+
+指定了`as-meta`
+
+```shell
+node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mongodb-web/temp/vecdb/llmqadb/llmqa --perset assoc-doc --text 风险 --assoc-match '_id' --as-meta question answer
+```
+
+```json
+[
+  {
+    "metadata": {
+      "/question": "语言大模型有哪些风险",
+      "/answer": "生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。"
+    }
+  }
+]
+```
+
+指定了`as-doc`，`as-meta`
+
+```shell
+node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer --as-meta _id question
+```
+
+```json
+[
+  {
+    "pageContent": "生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。",
+    "metadata": {
+      "/_id": "64fffae6375aa0cf0f71586f",
+      "/question": "语言大模型有哪些风险",
+      "_pageContentSource": "/answer"
+    }
+  }
+]
+```
+
+指定了`as-doc`，`as-meta`，`retrieve-object`
+
+```shell
+node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer --as-meta _id question --retrieve-object
+```
+
+```json
+[
+  {
+    "pageContent": "{\"/answer\":\"生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。\"}",
+    "metadata": {
+      "/_id": "64fffae6375aa0cf0f71586f",
+      "/question": "语言大模型有哪些风险"
+    }
+  }
+]
+```
+
+指定了`as-doc`，`as-meta`，`retrieve-object`，结果对象包含多个字段
+
+```shell
+node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer question --as-meta _id --retrieve-object
+```
+
+```json
+[
+  {
+    "pageContent": "{\"/answer\":\"生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。\",\"/question\":\"语言大模型有哪些风险\"}",
+    "metadata": {
+      "/_id": "64fffae6375aa0cf0f71586f"
+    }
+  }
+]
+```
 
 # 计算向量
 

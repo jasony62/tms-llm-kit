@@ -6,6 +6,7 @@ import fs from 'fs'
 import { Collection } from 'mongodb'
 
 import Debug from 'debug'
+import { constants } from 'buffer'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline:metadata')
 
@@ -73,6 +74,104 @@ export class MetadataRetrieve extends RetrievePipeline {
     }
   }
   /**
+   * 关联数据整体转为一个文档对象
+   * @param rawDoc
+   */
+  private convertRawDoc2Document(
+    rawDoc: Record<string, any>,
+    asDoc?: string[],
+    asMeta?: string[]
+  ): Document {
+    let metadata: any
+    if (Array.isArray(asMeta) && asMeta.length) {
+      metadata = asMeta.reduce((m, k) => {
+        m[k] = jsonpointer.compile(k).get(rawDoc)
+        return m
+      }, {} as Record<string, any>)
+    }
+    let content: any
+    if (Array.isArray(asDoc) && asDoc.length) {
+      content = asDoc.reduce((c, k) => {
+        c[k] = jsonpointer.compile(k).get(rawDoc)
+        return c
+      }, {} as Record<string, any>)
+    } else {
+      content = rawDoc
+    }
+    if (!metadata) {
+      // 将文档内容从元数据中去掉
+      metadata = JSON.parse(JSON.stringify(rawDoc))
+      Object.keys(content).forEach((k) => {
+        jsonpointer.compile(k).set(metadata ?? {}, undefined)
+      })
+    }
+    return new Document({
+      pageContent: JSON.stringify(content),
+      metadata,
+    })
+  }
+  /**
+   *
+   * @param rawDoc
+   * @param asDoc
+   * @param asMeta
+   */
+  private splitRawDoc2Documents(
+    rawDoc: any,
+    asDoc?: string[],
+    asMeta?: string[]
+  ): Document[] {
+    let metadata: Record<string, any> | undefined
+    if (Array.isArray(asMeta) && asMeta.length) {
+      metadata = asMeta.reduce((m, c) => {
+        m[c] = jsonpointer.compile(c).get(rawDoc)
+        return m
+      }, {} as Record<string, any>)
+    }
+    let contents: Record<string, any> = {}
+    if (Array.isArray(asDoc) && asDoc.length) {
+      asDoc?.forEach((k) => {
+        contents[k] = jsonpointer.compile(k).get(rawDoc)
+      })
+    }
+    if (Object.keys(contents).length) {
+      if (!metadata) {
+        // 将文档内容从元数据中去掉
+        metadata = JSON.parse(JSON.stringify(rawDoc))
+        Object.keys(contents).forEach((k) => {
+          jsonpointer.compile(k).set(metadata ?? {}, undefined)
+        })
+      }
+      return Object.entries(contents).map(([k, v]) => {
+        return new Document({
+          pageContent: v,
+          metadata: {
+            ...metadata,
+            _pageContentSource: k,
+          },
+        })
+      })
+    } else {
+      if (metadata) {
+        return [
+          new Document({
+            pageContent: '',
+            metadata,
+          }),
+        ]
+      } else {
+        return [
+          new Document({
+            pageContent: '',
+            metadata: {
+              ...rawDoc,
+            },
+          }),
+        ]
+      }
+    }
+  }
+  /**
    * 执行一次查询
    * @param cl
    * @param filter
@@ -82,77 +181,24 @@ export class MetadataRetrieve extends RetrievePipeline {
     cl: Collection,
     filter: Record<string, any>
   ): Promise<Document[]> {
+    // 从mongodb获得数据
     const cursor = cl.find(filter)
+    // 处理结果
     const lcDocs = []
-    for await (const rawDoc of cursor) {
-      if (this.asDoc && this.asDoc.length) {
-        if (this.retrieveObject === true) {
-          let content: Record<string, any> = {}
-          for (let k of this.asDoc) {
-            let v = rawDoc[k]
-            content[k] = v
-            delete rawDoc[k]
-          }
-          lcDocs.push(
-            new Document({
-              pageContent: JSON.stringify(content),
-              metadata: {
-                ...rawDoc,
-              },
-            })
-          )
-        } else {
-          let contents: [string, any][] = []
-          for (let docField of this.asDoc) {
-            let content = rawDoc[docField]
-            if (content && typeof content === 'string') {
-              contents.push([docField, content])
-              delete rawDoc[docField]
-            }
-          }
-          let metadata: any
-          if (this.asMeta && this.asMeta.length) {
-            metadata = this.asMeta.reduce((m, k) => {
-              m[k] = rawDoc[k]
-              return m
-            }, {} as any)
-          } else {
-            metadata = {
-              ...rawDoc,
-            }
-          }
-          contents.forEach(([k, pageContent]) => {
-            lcDocs.push(
-              new Document({
-                pageContent,
-                metadata: {
-                  ...metadata,
-                  _pageContentSource: k,
-                },
-              })
-            )
-          })
-        }
-      } else {
-        let metadata: any
-        if (this.asMeta && this.asMeta.length) {
-          metadata = this.asMeta.reduce((m, k) => {
-            m[k] = rawDoc[k]
-            return m
-          }, {} as any)
-        } else {
-          metadata = {
-            ...rawDoc,
-          }
-        }
+    if (this.retrieveObject === true) {
+      for await (const rawDoc of cursor) {
         lcDocs.push(
-          new Document({
-            pageContent: '',
-            metadata,
-          })
+          this.convertRawDoc2Document(rawDoc, this.asDoc, this.asMeta)
+        )
+      }
+    } else {
+      for await (const rawDoc of cursor) {
+        lcDocs.push(
+          ...this.splitRawDoc2Documents(rawDoc, this.asDoc, this.asMeta)
         )
       }
     }
+
     return lcDocs
   }
   /**
@@ -177,8 +223,9 @@ export class MetadataRetrieve extends RetrievePipeline {
       for (let doc of documents) {
         let matcher: Record<string, any> = {}
         this.matchBy?.forEach((k) => {
-          if (k === '_id') matcher[k] = new ObjectId(doc.metadata[k])
-          else matcher[k] = doc.metadata[k]
+          let jp = jsonpointer.compile(k)
+          let v = jp.get(doc.metadata)
+          if (v ?? false) jp.set(matcher, k === '/_id' ? new ObjectId(v) : v)
         })
         debug('mongodb文档筛选条件\n%O', matcher)
         if (Object.keys(matcher).length) {
@@ -216,14 +263,25 @@ export class MetadataRetrieve extends RetrievePipeline {
           }
         }
         debug(`本地非向量化文档检索条件\n%O`, matcher)
-        let docs = await this.vectorStore?.metadataSearch(matcher, {
+        const assocDocs = await this.vectorStore?.metadataSearch(matcher, {
           fromAssocStore: this.fromAssocStore,
         })
-        if (docs) {
-          if (result) {
-            result.push(...docs)
+        if (assocDocs) {
+          result = []
+          if (this.retrieveObject === true) {
+            for (let assocDoc of assocDocs) {
+              let rawDoc: any = lcDoc2RawDoc(assocDoc)
+              result.push(
+                this.convertRawDoc2Document(rawDoc, this.asDoc, this.asMeta)
+              )
+            }
           } else {
-            result = docs
+            for (let assocDoc of assocDocs) {
+              let rawDoc: any = lcDoc2RawDoc(assocDoc)
+              result.push(
+                ...this.splitRawDoc2Documents(rawDoc, this.asDoc, this.asMeta)
+              )
+            }
           }
         }
       }
@@ -233,6 +291,17 @@ export class MetadataRetrieve extends RetrievePipeline {
       })
     }
     return result
+
+    function lcDoc2RawDoc(assocDoc: Document<Record<string, any>>) {
+      let rawDoc: any = {
+        ...assocDoc.metadata,
+        [assocDoc.metadata._pageContentSource]: assocDoc.pageContent,
+      }
+      delete rawDoc['_pageContentSource']
+      delete rawDoc.loc
+      delete rawDoc.source
+      return rawDoc
+    }
   }
   /**
    * lorder名称

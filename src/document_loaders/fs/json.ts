@@ -1,19 +1,19 @@
-import jsonpointer from 'jsonpointer'
 import { TextLoader } from 'langchain/document_loaders/fs/text'
 import { Document } from 'langchain/document'
-
+import { DocTransform } from '../../utils/index.js'
+/**
+ * 加载JSON数据文件
+ */
 export class JSONLoader extends TextLoader {
-  vecPts: string[]
-  metaPts: string[]
+  docTransform: DocTransform
 
   constructor(
     filePathOrBlob: string | Blob,
-    vecPts: string | string[] = [],
-    metaPts: string | string[] = []
+    asVec: string | string[] = [],
+    asMeta: string | string[] = []
   ) {
     super(filePathOrBlob)
-    this.vecPts = Array.isArray(vecPts) ? vecPts : vecPts.split(',')
-    this.metaPts = Array.isArray(metaPts) ? metaPts : metaPts.split(',')
+    this.docTransform = DocTransform.create(asVec, asMeta)
   }
 
   public async load(): Promise<Document[]> {
@@ -31,7 +31,7 @@ export class JSONLoader extends TextLoader {
     return await this.parse2(text, metadata)
   }
 
-  protected async parse2(
+  private async parse2(
     raw: string,
     metabase: Record<string, string>
   ): Promise<Document[]> {
@@ -40,34 +40,10 @@ export class JSONLoader extends TextLoader {
 
     if (json.length === 0) return []
 
-    const documents: Document[] = []
-    const compiledPointers1 = this.vecPts.map((pointer) => {
-      return /^\//.test(pointer)
-        ? jsonpointer.compile(pointer)
-        : jsonpointer.compile('/' + pointer)
-    })
-    const compiledPointers2 = this.metaPts.map((pointer) => {
-      return /^\//.test(pointer)
-        ? jsonpointer.compile(pointer)
-        : jsonpointer.compile('/' + pointer)
-    })
-
-    json.forEach((row) => {
-      compiledPointers1.forEach((pt, index) => {
-        let pageContent = pt.get(row)
-        let metadata = {
-          ...metabase,
-          // line: documents.length + 1,
-          _pageContentSource: this.vecPts[index],
-        }
-        compiledPointers2.forEach((pt) => {
-          pt.set(metadata, pt.get(row))
-        })
-        let doc = new Document({ pageContent, metadata })
-        documents.push(doc)
-      })
-    })
-
-    return documents
+    return json.reduce((result, row) => {
+      let docs = this.docTransform.exec(row, metabase)
+      result.push(...docs)
+      return result
+    }, [] as Document[])
   }
 }

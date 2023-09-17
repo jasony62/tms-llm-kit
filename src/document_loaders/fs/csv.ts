@@ -1,5 +1,6 @@
 import { TextLoader } from 'langchain/document_loaders'
 import { Document } from 'langchain/document'
+import { DocTransform } from '../../utils/index.js'
 /**
  * Loads a CSV file into a list of documents.
  * Each document represents one row of the CSV file.
@@ -36,26 +37,19 @@ import { Document } from 'langchain/document'
  * // <i>Corruption discovered at the core of the Banking Clan!</i>
  */
 
-type CSVLoaderOptions = {
-  column?: string
-  meta?: string
-  separator?: string
-}
-
 export class CSVLoader extends TextLoader {
-  protected options: CSVLoaderOptions = {}
+  docTransform: DocTransform
+  separator = ','
 
   constructor(
     filePathOrBlob: string | Blob,
-    options?: CSVLoaderOptions | string
+    asVec: string | string[] = [],
+    asMeta: string | string[] = []
   ) {
     super(filePathOrBlob)
-    if (typeof options === 'string') {
-      this.options = { column: options }
-    } else {
-      this.options = options ?? this.options
-    }
+    this.docTransform = DocTransform.create(asVec, asMeta)
   }
+
   public async load(): Promise<Document[]> {
     let text: string
     let metadata: Record<string, string>
@@ -71,46 +65,19 @@ export class CSVLoader extends TextLoader {
     return await this.parse2(text, metadata)
   }
 
-  protected async parse2(
+  private async parse2(
     raw: string,
     metabase: Record<string, string>
   ): Promise<Document[]> {
-    const { column, meta, separator = ',' } = this.options
-
-    if (!column) throw new Error('没有指定作为文档内容的列名称')
-
     const { dsvFormat } = await CSVLoaderImports()
-    const psv = dsvFormat(separator)
+    const psv = dsvFormat(this.separator)
     const parsed = psv.parse(raw.trim())
 
-    const documents: Document[] = []
-
-    const metaCols = meta ? meta.split(',') : null
-    const cntCols = column.split(',')
-
-    for (let cntCol of cntCols) {
-      if (!parsed.columns.includes(cntCol)) {
-        throw new Error(`Column ${cntCol} not found in CSV file.`)
-      }
-      parsed.forEach((row) => {
-        let pageContent = row[cntCol]!
-        let metadata: any = {
-          ...metabase,
-          // line: documents.length + 1,
-          _pageContentSource: cntCol,
-        }
-        if (metaCols) {
-          metaCols.forEach((col) => (metadata[col] = row[col]))
-        }
-        let doc = new Document({
-          pageContent,
-          metadata,
-        })
-        documents.push(doc)
-      })
-    }
-
-    return documents
+    return parsed.reduce((result, row) => {
+      let docs = this.docTransform.exec(row, metabase)
+      result.push(...docs)
+      return result
+    }, [] as Document[])
   }
 }
 

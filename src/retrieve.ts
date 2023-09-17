@@ -2,17 +2,7 @@ import 'dotenv/config'
 import { program } from 'commander'
 import fs from 'fs'
 import { runPerset } from './retrieve/perset.js'
-
-/**
- * 将filter/assocFilter参数转换为对象
- * @param value
- * @returns
- */
-function parseJsonOptions(value: string) {
-  let obj = value ? JSON.parse(value) : undefined
-  if (!obj || typeof obj !== 'object') return undefined
-  return obj
-}
+import { parseJsonOptions } from './utils/index.js'
 
 program.requiredOption('--store <directory>', '向量数据库的存储位置')
 program.requiredOption(

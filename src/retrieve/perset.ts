@@ -7,7 +7,7 @@ import {
 } from './pipeline/index.js'
 import { getEmbedding } from '../embeddings/index.js'
 
-import { reviceJPArray, reviseJPObject } from '../utils/index.js'
+import { reviseJPArray, reviseJPObject } from '../utils/index.js'
 
 abstract class RetrievePerset {
   constructor(public name: string, public vectorStore: HNSWLib2) {}
@@ -129,7 +129,13 @@ export async function runPerset(
     options.assocFilter = reviseJPObject(options.assocFilter)
   }
   if (Array.isArray(options.assocMatch)) {
-    options.assocMatch = reviceJPArray(options.assocMatch)
+    options.assocMatch = reviseJPArray(options.assocMatch)
+  }
+  if (Array.isArray(options.asDoc)) {
+    options.asDoc = reviseJPArray(options.asDoc)
+  }
+  if (Array.isArray(options.asMeta)) {
+    options.asMeta = reviseJPArray(options.asMeta)
   }
 
   let persetClass: any
