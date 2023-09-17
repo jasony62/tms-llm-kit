@@ -17,12 +17,12 @@ interface LLMAnswerOptions {
  * 语言大模型生成回复
  */
 export class LLMAnswer extends RetrievePipeline {
-  modelName = 'baiduwenxin'
+  modelName
   verbose = false
   constructor(public question: string, options?: LLMAnswerOptions) {
     super()
-    if (options?.verbose === true) this.verbose = true
-    if (options?.modelName) this.modelName = options.modelName
+    this.verbose = options?.verbose === true
+    this.modelName = options?.modelName
   }
   baiduwenxin() {
     const { BAIDUWENXIN_API_KEY, BAIDUWENXIN_SECRET_KEY } = process.env
@@ -71,7 +71,6 @@ export class LLMAnswer extends RetrievePipeline {
         const prompt = PromptTemplate.fromTemplate(
           '根据给出的资料，回答用户的问题，必须符合用户对答案的要求。\n资料：{stuff}\n\n问题：{question}'
         )
-
         const chain = new LLMChain({
           llm,
           prompt,

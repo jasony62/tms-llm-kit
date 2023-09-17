@@ -49,7 +49,7 @@ export class HNSWLib2 {
    */
   async similaritySearch(
     query: string,
-    k = 4,
+    k = 1,
     filter?: this['FilterType']
   ): Promise<Document[]> {
     return this.store.similaritySearch(query, k, filter)

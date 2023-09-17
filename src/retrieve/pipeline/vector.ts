@@ -1,10 +1,26 @@
+import JSONPointer from 'jsonpointer'
 import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
-import {
-  PointerFilter,
-  RetrievePipeline,
-  compilePointerFilter,
-} from '../pipeline.js'
+import { PointerFilter, RetrievePipeline } from '../pipeline.js'
 import { Document } from 'langchain/document'
+
+/**
+ * 将筛选条件编译为检查规则方法
+ *
+ * @param filter
+ * @returns
+ */
+function filterFunction(filter: PointerFilter): (doc: Document) => boolean {
+  const rules = Object.keys(filter).map((k) => {
+    let cp = JSONPointer.compile(k)
+    return (metadata: any) => {
+      return cp.get(metadata) === filter[k]
+    }
+  })
+
+  return (doc: any) => {
+    return rules.every((rule) => rule(doc.metadata))
+  }
+}
 
 interface VectorRetrieveOptions {
   filter: PointerFilter
@@ -40,7 +56,7 @@ export class VectorRetrieve extends RetrievePipeline {
     const result = await this.vectorStore?.similaritySearch(
       text,
       this.numRetrieve,
-      this.filter ? compilePointerFilter(this.filter) : undefined
+      this.filter ? filterFunction(this.filter) : undefined
     )
     if (this.next) {
       return await this.next.run(result)

@@ -6,6 +6,7 @@ import fs from 'fs'
 import { Collection } from 'mongodb'
 
 import Debug from 'debug'
+import JSONPointer from 'jsonpointer'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline:metadata')
 
@@ -327,7 +328,7 @@ export class MetadataRetrieve extends RetrievePipeline {
           fromAssocStore: this.fromAssocStore,
         })
         if (assocDocs) {
-          result = []
+          result ??= []
           if (this.retrieveObject === true) {
             for (let assocDoc of assocDocs) {
               let rawDoc: any = lcDoc2RawDoc(assocDoc)
@@ -355,8 +356,9 @@ export class MetadataRetrieve extends RetrievePipeline {
     function lcDoc2RawDoc(assocDoc: Document<Record<string, any>>) {
       let rawDoc: any = {
         ...assocDoc.metadata,
-        [assocDoc.metadata._pageContentSource]: assocDoc.pageContent,
       }
+      const jp = JSONPointer.compile(assocDoc.metadata._pageContentSource)
+      jp.set(rawDoc, assocDoc.pageContent)
       delete rawDoc['_pageContentSource']
       delete rawDoc.loc
       delete rawDoc.source

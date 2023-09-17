@@ -46,6 +46,12 @@ export class Store {
       await vectorStore.save(this.storePath)
       debug('完成创建向量数据库')
 
+      // 保存使用的模型信息
+      fs.writeFileSync(
+        `${this.storePath}/model.json`,
+        JSON.stringify({ name: this.modelName })
+      )
+
       // 保存loader的基本信息
       if (loader) {
         const filepath = `${this.storePath}/loader.json`

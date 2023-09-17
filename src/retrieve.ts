@@ -5,10 +5,6 @@ import { runPerset } from './retrieve/perset.js'
 import { parseJsonOptions } from './utils/index.js'
 
 program.requiredOption('--store <directory>', '向量数据库的存储位置')
-program.requiredOption(
-  '--model <model>',
-  '使用的模型名称，支持：baiduwenxin和xunfeispark'
-)
 program.option('--text <text>', '要在向量数据库中检索的文本')
 program.option('--num-retrieve <numRetrieve>', '返回匹配文档的数量', '1')
 program.option(
@@ -32,11 +28,12 @@ program.option(
 program.option('--as-doc <asDoc...>', '作为文档处理的字段。')
 program.option('--retrieve-object', '作为文档处理的字段。')
 program.option('--as-meta <asMeta...>', '作为元数据处理的字段。')
+program.option('--llm-verbose', '作为文档处理的字段。')
 
 program.parse()
 const options = program.opts()
 
-const { store, model, text } = options
+const { store, text } = options
 
 // if (!text) {
 //   console.log(`没有指定要检索的文本`)
@@ -48,6 +45,6 @@ if (!fs.existsSync(store)) {
   process.exit(0)
 }
 
-let result = await runPerset(options.perset, options, text, model)
+let result = await runPerset(options.perset, options, text)
 
 console.log('返回的答案：\n%s', JSON.stringify(result, null, 2))

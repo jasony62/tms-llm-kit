@@ -126,7 +126,7 @@ DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27
 ```
 
 ```shell
-DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name llmqadb --cl-name llmqa --as-meta _id --as-vec question answer --model baiduwenxin --store ./store/mongodb-xf
+DEBUG=* node ./dist/build --type mongodb --url 'mongodb://root:root@localhost:27017' --db-name llmqadb --cl-name llmqa --as-meta _id --as-vec question answer --model xunfeispark --store ./store/mongodb-xf
 ```
 
 ## 从`wikijs`加载，不支持非向量化文档。
@@ -185,7 +185,7 @@ DEBUG=* node ./dist/build --type tmw --url 'http://localhost:6030/api/admin/docu
 根据输入的文本（text）和元数据过滤条件（filter）(可不写)，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset vector-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --num-retrieve 1
+DEBUG=* node ./dist/retrieve --store ./store/data01-faq-xf --perset vector-doc --text 风险 --filter '{"/_pageContentSource":"/q"}'
 ```
 
 ```json
@@ -194,8 +194,61 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
     "pageContent": "语言大模型有哪些风险",
     "metadata": {
       "source": "./sample/data01-faq.csv",
-      "_pageContentSource": "q",
+      "_pageContentSource": "/q",
       "id": "7",
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      }
+    }
+  }
+]
+```
+
+使用`num-retrieve`参数控制返回结果的数量
+
+```shell
+DEBUG=* node ./dist/retrieve --store ./store/data01-faq-assoc-xf --perset vector-doc --text 风险 --num-retrieve 3
+```
+
+```json
+[
+  {
+    "pageContent": "语言大模型有哪些风险",
+    "metadata": {
+      "source": "./sample/data01-faq.csv",
+      "id": "7",
+      "_pageContentSource": "/q",
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      }
+    }
+  },
+  {
+    "pageContent": "大模型中的微调是什么",
+    "metadata": {
+      "source": "./sample/data01-faq.csv",
+      "id": "11",
+      "_pageContentSource": "/q",
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      }
+    }
+  },
+  {
+    "pageContent": "语言大模型有以下局限性",
+    "metadata": {
+      "source": "./sample/data01-faq.csv",
+      "id": "4",
+      "_pageContentSource": "/q",
       "loc": {
         "lines": {
           "from": 1,
@@ -210,7 +263,36 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 先根据输入的文本（text）和过滤条件（filter）搜索相似的文档，再用文档的元数据（assoc-match）在非向量库中进行元数据搜索。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data03-faq-wx --perset assoc-doc --text 风险 --filter '{"/_pageContentSource":"q"}' --assoc-match '/id' --num-retrieve 3
+DEBUG=* node ./dist/retrieve --store ./store/data01-faq-assoc-xf --perset assoc-doc --text 风险 --filter '{"/_pageContentSource":"/q"}' --assoc-match '/id' --num-retrieve 3
+```
+
+```json
+[
+  {
+    "metadata": {
+      "id": "7",
+      "a": "生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。"
+    }
+  },
+  {
+    "metadata": {
+      "id": "11",
+      "a": "大模型的微调是指针对特定任务对预训练的大模型进行微小调整。它是使用少量目标领域的样本数据进行训练，以优化模型在特定任务上的性能。微调的目的是使大模型适应特定任务和数据分布，以提高模型的表现。通过微调，我们可以利用现有的模型能力来解决具体的任务。"
+    }
+  },
+  {
+    "metadata": {
+      "id": "4",
+      "a": "对于某些特定领域或专业知识的处理能力有限。可能会出现生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。"
+    }
+  }
+]
+```
+
+使用`as-doc`参数指定作为文档内容的字段
+
+```shell
+DEBUG=* node ./dist/retrieve --store ./store/data01-faq-assoc-xf --perset assoc-doc --text 风险 --filter '{"/_pageContentSource":"/q"}' --assoc-match id --as-doc a --num-retrieve 3
 ```
 
 ```json
@@ -218,9 +300,22 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data03-faq-wx -
   {
     "pageContent": "生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。对于某些特定领域或专业知识的处理能力有限。存在数据泄露和隐私安全问题。",
     "metadata": {
-      "source": "./sample/data01-faq.csv",
-      "_pageContentSource": "a",
-      "id": "7"
+      "id": "7",
+      "_pageContentSource": "/a"
+    }
+  },
+  {
+    "pageContent": "大模型的微调是指针对特定任务对预训练的大模型进行微小调整。它是使用少量目标领域的样本数据进行训练，以优化模型在特定任务上的性能。微调的目的是使大模型适应特定任务和数据分布，以提高模型的表现。通过微调，我们可以利用现有的模型能力来解决具体的任务。",
+    "metadata": {
+      "id": "11",
+      "_pageContentSource": "/a"
+    }
+  },
+  {
+    "pageContent": "对于某些特定领域或专业知识的处理能力有限。可能会出现生成文本的单调性或重复性问题。对于某些语言的处理能力有限。对于某些复杂语言问题的处理能力有限。",
+    "metadata": {
+      "id": "4",
+      "_pageContentSource": "/a"
     }
   }
 ]
@@ -229,7 +324,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data03-faq-wx -
 将检索到的文本作为素材提供给大模型生成答案。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset feed-llm --text 风险
+DEBUG=* node ./dist/retrieve --store ./store/data01-faq-xf --perset feed-llm --text 风险
 ```
 
 ```json
@@ -244,7 +339,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 根据指定的元数据过滤条件（filter），在向量化文档库中搜索，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset meta-vector-doc --filter '{"/id":"1"}'
+DEBUG=* node ./dist/retrieve --store ./store/data01-faq-xf --perset meta-vector-doc --filter '{"/id":"1"}'
 ```
 
 ```json
@@ -253,8 +348,22 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
     "pageContent": "什么是语言大模型",
     "metadata": {
       "source": "./sample/data01-faq.csv",
-      "_pageContentSource": "q",
       "id": "1",
+      "_pageContentSource": "/q",
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      }
+    }
+  },
+  {
+    "pageContent": "语言大模型是一种基于深度学习技术的人工智能模型，它可以自动从大量文本数据中学习语言规律，并生成类似人类的自然语言文本。",
+    "metadata": {
+      "source": "./sample/data01-faq.csv",
+      "id": "1",
+      "_pageContentSource": "/a",
       "loc": {
         "lines": {
           "from": 1,
@@ -269,7 +378,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 根据指定的元数据过滤条件（filter），在非向量化文档库中搜索，返回匹配的文档。
 
 ```shell
-DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx --perset meta-assoc-doc --filter '{"/id":"1"}'
+ DEBUG=* node ./dist/retrieve --store ./store/data01-faq-assoc-xf --perset meta-assoc-doc --filter '{"/id":"1"}'
 ```
 
 ```json
@@ -278,8 +387,8 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
     "pageContent": "语言大模型是一种基于深度学习技术的人工智能模型，它可以自动从大量文本数据中学习语言规律，并生成类似人类的自然语言文本。",
     "metadata": {
       "source": "./sample/data01-faq.csv",
-      "_pageContentSource": "a",
-      "id": "1"
+      "id": "1",
+      "_pageContentSource": "/a"
     }
   }
 ]
@@ -287,7 +396,6 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 
 | 参数            | 说明                                                                           | 类型    | 默认值 |
 | --------------- | ------------------------------------------------------------------------------ | ------- | ------ |
-| model           | 使用的语言大模型。                                                             | 文本    | 无     |
 | store           | 向量数据目录地址。                                                             | 文本    | 无     |
 | perset          | 预定义的检索方式。                                                             | 文本    | 无     |
 | text            | 检索条件。                                                                     | 文本    | 无     |
@@ -309,7 +417,7 @@ DEBUG=* node ./dist/retrieve --model baiduwenxin --store ./store/data01-faq-wx -
 从`mongodb`数据库中检索关联文档，不指定参数`as-doc`，`as-meta`，`retrieve-object`参数
 
 ```shell
-node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mongodb-web/temp/vecdb/llmqadb/llmqa --perset assoc-doc --text 风险 --assoc-match '_id'
+node ./dist/retrieve --store <...> --perset assoc-doc --text 风险 --assoc-match '_id'
 ```
 
 ```json
@@ -328,7 +436,7 @@ node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mong
 指定了`as-doc`
 
 ```shell
-node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mongodb-web/temp/vecdb/llmqadb/llmqa --perset assoc-doc --text 风险 --assoc-match '_id' --as-doc 'answer'
+node ./dist/retrieve --store  <...> --perset assoc-doc --text 风险 --assoc-match '_id' --as-doc 'answer'
 ```
 
 ```json
@@ -348,7 +456,7 @@ node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mong
 指定了`as-meta`
 
 ```shell
-node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mongodb-web/temp/vecdb/llmqadb/llmqa --perset assoc-doc --text 风险 --assoc-match '_id' --as-meta question answer
+node ./dist/retrieve --store  <...> --perset assoc-doc --text 风险 --assoc-match '_id' --as-meta question answer
 ```
 
 ```json
@@ -365,7 +473,7 @@ node ./dist/retrieve --model baiduwenxin --store /Users/yangyue/project/tms-mong
 指定了`as-doc`，`as-meta`
 
 ```shell
-node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer --as-meta _id question
+node ./dist/retrieve --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer --as-meta _id question
 ```
 
 ```json
@@ -384,7 +492,7 @@ node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text
 指定了`as-doc`，`as-meta`，`retrieve-object`
 
 ```shell
-node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer --as-meta _id question --retrieve-object
+node ./dist/retrieve --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer --as-meta _id question --retrieve-object
 ```
 
 ```json
@@ -402,7 +510,7 @@ node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text
 指定了`as-doc`，`as-meta`，`retrieve-object`，结果对象包含多个字段
 
 ```shell
-node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer question --as-meta _id --retrieve-object
+node ./dist/retrieve --store <xxx> --perset assoc-doc --text 风险 --assoc-match _id --as-doc answer question --as-meta _id --retrieve-object
 ```
 
 ```json
@@ -421,7 +529,7 @@ node ./dist/retrieve --model baiduwenxin --store <xxx> --perset assoc-doc --text
 以`wikijs`作为数据源时，`assoc-match`参数无效，目前，仅通过`id`字段进行匹配。
 
 ```shell
-node ./dist/retrieve --model xunfeispark --store /Users/yangyue/project/tms-llm-kit/store/wikijs-xf --perset assoc-doc --text 企业数字化 --as-doc content
+node ./dist/retrieve --store  <...> --perset assoc-doc --text 企业数字化 --as-doc content
 ```
 
 指定了`as-doc`参数，控制输出的内容
@@ -446,7 +554,7 @@ node ./dist/retrieve --model xunfeispark --store /Users/yangyue/project/tms-llm-
 指定了`as-doc`和`as-meta`参数，控制输出的内容
 
 ```shell
- node ./dist/retrieve --model xunfeispark --store /Users/yangyue/project/tms-llm-kit/store/wikijs-xf --perset assoc-doc --text 企业数字化 --as-doc content --as-meta path
+ node ./dist/retrieve --store  <...> --perset assoc-doc --text 企业数字化 --as-doc content --as-meta path
 ```
 
 ```json
@@ -464,7 +572,7 @@ node ./dist/retrieve --model xunfeispark --store /Users/yangyue/project/tms-llm-
 `as-doc`参数指定了多个字段，`retrieve-object`参数控制结果作为对象返回（而不是 3 个独立的结果）。
 
 ```shell
-node ./dist/retrieve --model xunfeispark --store <xxx> --perset assoc-doc --text 企业数字化 --assoc-match _id --as-doc title path content --retrieve-object
+node ./dist/retrieve --store <xxx> --perset assoc-doc --text 企业数字化 --assoc-match _id --as-doc title path content --retrieve-object
 ```
 
 ```json

@@ -5,6 +5,8 @@ import {
   MetadataRetrieve,
   LLMAnswer,
 } from './pipeline/index.js'
+import fs from 'fs'
+import path from 'path'
 import { getEmbedding } from '../embeddings/index.js'
 
 import { reviseJPArray, reviseJPObject } from '../utils/index.js'
@@ -70,7 +72,10 @@ class FeedLlm extends RetrievePerset {
     const { filter, numRetrieve, model } = this.options
     let pipeline = new VectorRetrieve(this.vectorStore, { filter, numRetrieve })
     let modelName = model as string
-    let pipeline2 = new LLMAnswer(text, { modelName })
+    let pipeline2 = new LLMAnswer(text, {
+      modelName,
+      verbose: this.options.llmVerbose === true,
+    })
     pipeline.next = pipeline2
     let result = await pipeline.run(text)
     return result
@@ -119,8 +124,7 @@ class MetaAssocDoc extends RetrievePerset {
 export async function runPerset(
   name: string,
   options: Record<string, any>,
-  text?: string,
-  model?: string
+  text?: string
 ) {
   if (options.filter && typeof options.filter === 'object') {
     options.filter = reviseJPObject(options.filter)
@@ -158,7 +162,15 @@ export async function runPerset(
   }
   if (!persetClass) throw new Error('指定了无效的预制操作：' + name)
 
-  const embedding = await getEmbedding(model ?? 'baiduwenxin')
+  const modelFilePath = path.resolve(options.store, 'model.json')
+  if (!fs.existsSync(modelFilePath))
+    throw new Error('没有获得向量数据库的模型配置文件model.json')
+  const modelConfig = JSON.parse(
+    fs.readFileSync(modelFilePath).toString('utf-8')
+  )
+  options.model = modelConfig.name
+
+  const embedding = await getEmbedding(modelConfig.name)
   /**
    * 从指定的数据库中加载数据
    */
