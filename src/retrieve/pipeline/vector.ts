@@ -1,5 +1,4 @@
 import JSONPointer from 'jsonpointer'
-import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
 import { PointerFilter, RetrievePipeline } from '../pipeline.js'
 import { Document } from 'langchain/document'
 import { RetrieveService } from '../../types/index.js'

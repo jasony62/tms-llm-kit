@@ -39,9 +39,11 @@ export class HNSWLib2 implements RetrieveService {
     return lib
   }
   /**
+   * 执行相似搜索
    *
-   * @param query
-   * @param k
+   * @param query 要搜索的文本
+   * @param k 返回的数量
+   * @param filter 文档过滤方法
    * @returns
    */
   async similaritySearch(
@@ -49,7 +51,13 @@ export class HNSWLib2 implements RetrieveService {
     k = 1,
     filter?: (doc: Document<Record<string, any>>) => boolean
   ): Promise<Document[]> {
-    return this.store.similaritySearch(query, k, filter)
+    const result = await this.store.similaritySearchWithScore(query, k, filter)
+    return result.map(([doc, score]) => {
+      return {
+        ...doc,
+        _score: score,
+      }
+    })
   }
   /**
    * 根据元数据检索文档

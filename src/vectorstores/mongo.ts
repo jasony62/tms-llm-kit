@@ -72,8 +72,8 @@ export class Mongo2 implements RetrieveService {
   }
   /**
    *
-   * @param query
-   * @param k
+   * @param query 查询条件
+   * @param k 返回的数量
    * @returns
    */
   async similaritySearch(
