@@ -1,7 +1,7 @@
 /******************************
  * 百度文心
  ******************************/
-import { EmbeddingsParams } from 'langchain/embeddings/base'
+import { EmbeddingsParams } from '@langchain/core/embeddings'
 
 import Debug from 'debug'
 import fs from 'fs'

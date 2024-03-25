@@ -1,8 +1,8 @@
 import { Document } from 'langchain/document'
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
-import { HNSWLib } from 'langchain/vectorstores/hnswlib'
+import { HNSWLib } from '@langchain/community/vectorstores/hnswlib'
 import { getEmbedding } from '../embeddings/index.js'
-import { BaseDocumentLoader } from 'langchain/document_loaders'
+import { BaseDocumentLoader } from 'langchain/document_loaders/base'
 import fs from 'fs'
 
 import Debug from 'debug'

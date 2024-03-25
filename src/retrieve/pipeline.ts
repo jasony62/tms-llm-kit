@@ -1,7 +1,7 @@
-import type { HNSWLib2 } from '../vectorstores/hnswlib.js'
 import type { Document } from 'langchain/document'
 
 import Debug from 'debug'
+import { RetrieveService } from '../types/index.js'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline')
 
@@ -12,7 +12,7 @@ export interface PointerFilter {
 export abstract class RetrievePipeline {
   _next: RetrievePipeline | undefined
 
-  constructor(public vectorStore?: HNSWLib2) {}
+  constructor(public service?: RetrieveService) {}
 
   abstract run(args: any): Promise<Document<Record<string, any>>[]>
 

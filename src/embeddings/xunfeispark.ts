@@ -2,7 +2,7 @@
  * 讯飞星火
  ******************************/
 import { createHmac } from 'crypto'
-import { EmbeddingsParams } from 'langchain/embeddings/base'
+import { EmbeddingsParams } from '@langchain/core/embeddings'
 import { Embeddings2 } from './types.js'
 
 import Debug from 'debug'

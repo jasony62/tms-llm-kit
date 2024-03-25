@@ -1,8 +1,8 @@
-import { ChatBaiduWenxin } from 'langchain/chat_models/baiduwenxin'
+import { ChatBaiduWenxin } from '@langchain/community/chat_models/baiduwenxin'
 import { RetrievePipeline } from '../pipeline.js'
 import { ChatXunfeiSpark } from '../../chat_models/xunfeispark.js'
 import { Document } from 'langchain/document'
-import { PromptTemplate } from 'langchain/prompts'
+import { PromptTemplate } from '@langchain/core/prompts'
 import { LLMChain } from 'langchain/chains'
 
 import Debug from 'debug'

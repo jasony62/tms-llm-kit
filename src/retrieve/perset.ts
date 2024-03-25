@@ -10,9 +10,15 @@ import path from 'path'
 import { getEmbedding } from '../embeddings/index.js'
 
 import { reviseJPArray, reviseJPObject } from '../utils/index.js'
+import { RetrieveService } from '../types/index.js'
+import { Mongo2 } from '../vectorstores/mongo.js'
 
-abstract class RetrievePerset {
-  constructor(public name: string, public vectorStore: HNSWLib2) {}
+export abstract class RetrievePerset {
+  constructor(
+    public name: string,
+    public service: RetrieveService,
+    public options: Record<string, any>
+  ) {}
 
   abstract run(text?: string): Promise<Document<Record<string, any>>[]>
 }
@@ -20,12 +26,12 @@ abstract class RetrievePerset {
  * 语义检索向量化文档
  */
 class VectorDoc extends RetrievePerset {
-  constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('vector-doc', vectorStore)
+  constructor(service: RetrieveService, options: Record<string, any>) {
+    super('vector-doc', service, options)
   }
   async run(text: string): Promise<Document[]> {
     const { filter, numRetrieve } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numRetrieve })
+    let pipeline = new VectorRetrieve(this.service, { filter, numRetrieve })
     let result = await pipeline.run(text)
     return result
   }
@@ -34,8 +40,8 @@ class VectorDoc extends RetrievePerset {
  * 语义检索关联文档
  */
 class AssocDoc extends RetrievePerset {
-  constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('assoc-doc', vectorStore)
+  constructor(service: RetrieveService, options: Record<string, any>) {
+    super('assoc-doc', service, options)
   }
   async run(text: string): Promise<Document[]> {
     const {
@@ -47,8 +53,8 @@ class AssocDoc extends RetrievePerset {
       asMeta,
       retrieveObject,
     } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numRetrieve })
-    let pipeline2 = new MetadataRetrieve(this.vectorStore, {
+    let pipeline = new VectorRetrieve(this.service, { filter, numRetrieve })
+    let pipeline2 = new MetadataRetrieve(this, {
       matchBy: assocMatch,
       filter: assocFilter,
       fromAssocStore: true,
@@ -65,12 +71,12 @@ class AssocDoc extends RetrievePerset {
  * 语言大模型生成回复
  */
 class FeedLlm extends RetrievePerset {
-  constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('feed-llm', vectorStore)
+  constructor(service: RetrieveService, options: Record<string, any>) {
+    super('feed-llm', service, options)
   }
   async run(text: string): Promise<Document[]> {
     const { filter, numRetrieve, model } = this.options
-    let pipeline = new VectorRetrieve(this.vectorStore, { filter, numRetrieve })
+    let pipeline = new VectorRetrieve(this.service, { filter, numRetrieve })
     let modelName = model as string
     let pipeline2 = new LLMAnswer(text, {
       modelName,
@@ -85,12 +91,12 @@ class FeedLlm extends RetrievePerset {
  * 元数据检索向量化文档
  */
 class MetaVectorDoc extends RetrievePerset {
-  constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('meta-vector-doc', vectorStore)
+  constructor(service: RetrieveService, options: Record<string, any>) {
+    super('meta-vector-doc', service, options)
   }
   async run(): Promise<Document<Record<string, any>>[]> {
     const { filter } = this.options
-    let pipeline = new MetadataRetrieve(this.vectorStore, { filter })
+    let pipeline = new MetadataRetrieve(this, { filter })
     let result = await pipeline.run()
     return result
   }
@@ -99,12 +105,12 @@ class MetaVectorDoc extends RetrievePerset {
  * 元数据检索关联文档
  */
 class MetaAssocDoc extends RetrievePerset {
-  constructor(vectorStore: HNSWLib2, public options: Record<string, any>) {
-    super('meta-assoc-doc', vectorStore)
+  constructor(service: RetrieveService, options: Record<string, any>) {
+    super('meta-assoc-doc', service, options)
   }
   async run(): Promise<Document<Record<string, any>>[]> {
     const { filter } = this.options
-    let pipeline = new MetadataRetrieve(this.vectorStore, {
+    let pipeline = new MetadataRetrieve(this, {
       filter,
       fromAssocStore: true,
     })
@@ -162,21 +168,30 @@ export async function runPerset(
   }
   if (!persetClass) throw new Error('指定了无效的预制操作：' + name)
 
-  const modelFilePath = path.resolve(options.store, 'model.json')
-  if (!fs.existsSync(modelFilePath))
-    throw new Error('没有获得向量数据库的模型配置文件model.json')
-  const modelConfig = JSON.parse(
-    fs.readFileSync(modelFilePath).toString('utf-8')
-  )
-  options.model = modelConfig.name
-
-  const embedding = await getEmbedding(modelConfig.name)
   /**
    * 从指定的数据库中加载数据
    */
-  const vectorStore = await HNSWLib2.load(options.store, embedding)
+  let service
+  if (options.store.indexOf('mongodb://') === 0) {
+    const { db: dbName, cl: clName, asVec, asMeta } = options
+    if (!dbName) throw new Error('没有指定mongodb数据库名称')
+    if (!clName) throw new Error('没有指定mongodb集合名称')
+    service = await Mongo2.connect(options.store, dbName, clName, asVec, asMeta)
+  } else {
+    const modelFilePath = path.resolve(options.store, 'model.json')
+    if (!fs.existsSync(modelFilePath))
+      throw new Error('没有获得向量数据库的模型配置文件model.json')
+    const modelConfig = JSON.parse(
+      fs.readFileSync(modelFilePath).toString('utf-8')
+    )
+    options.model = modelConfig.name
 
-  const perset = new persetClass(vectorStore, options)
+    const embedding = await getEmbedding(modelConfig.name)
+
+    service = await HNSWLib2.load(options.store, embedding)
+  }
+
+  const perset = new persetClass(service, options)
 
   return await perset.run(text)
 }

@@ -1,4 +1,4 @@
-import { TextLoader } from 'langchain/document_loaders'
+import { TextLoader } from 'langchain/document_loaders/fs/text'
 import { Document } from 'langchain/document'
 import { DocTransform } from '../../utils/index.js'
 /**
@@ -50,7 +50,7 @@ export class CSVLoader extends TextLoader {
     this.docTransform = DocTransform.create(asVec, asMeta)
   }
 
-  public async load(): Promise<Document[]> {
+  public async load(): Promise<Document<Record<string, any>>[]> {
     let text: string
     let metadata: Record<string, string>
     if (typeof this.filePathOrBlob === 'string') {

@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { program } from 'commander'
-import { Embeddings } from 'langchain/embeddings/base'
+import { Embeddings } from '@langchain/core/embeddings'
 
 import Debug from 'debug'
 

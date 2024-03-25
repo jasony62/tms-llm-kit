@@ -2,6 +2,7 @@ import JSONPointer from 'jsonpointer'
 import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
 import { PointerFilter, RetrievePipeline } from '../pipeline.js'
 import { Document } from 'langchain/document'
+import { RetrieveService } from '../../types/index.js'
 
 /**
  * 将筛选条件编译为检查规则方法
@@ -35,7 +36,8 @@ export class VectorRetrieve extends RetrievePipeline {
 
   numRetrieve = 1
 
-  constructor(vectorStore: HNSWLib2, options?: VectorRetrieveOptions) {
+  // constructor(vectorStore: HNSWLib2, options?: VectorRetrieveOptions) {
+  constructor(vectorStore: RetrieveService, options?: VectorRetrieveOptions) {
     super(vectorStore)
 
     if (options?.filter) {
@@ -53,7 +55,7 @@ export class VectorRetrieve extends RetrievePipeline {
    * @returns
    */
   async run(text: string): Promise<Document<Record<string, any>>[]> {
-    const result = await this.vectorStore?.similaritySearch(
+    const result = await this.service?.similaritySearch(
       text,
       this.numRetrieve,
       this.filter ? filterFunction(this.filter) : undefined

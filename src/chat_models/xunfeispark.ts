@@ -1,12 +1,10 @@
 import { CallbackManagerForLLMRun } from 'langchain/callbacks'
-import { BaseChatModel, BaseChatModelParams } from 'langchain/chat_models/base'
 import {
-  AIMessage,
-  BaseMessage,
-  ChatGeneration,
-  ChatMessage,
-  ChatResult,
-} from 'langchain/schema'
+  BaseChatModel,
+  BaseChatModelParams,
+} from '@langchain/core/language_models/chat_models'
+import { AIMessage, BaseMessage, ChatMessage } from '@langchain/core/messages'
+import { ChatGeneration, ChatResult } from '@langchain/core/outputs'
 import { createHmac } from 'crypto'
 import WebSocket from 'ws'
 

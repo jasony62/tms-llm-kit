@@ -1,12 +1,15 @@
 import jsonpointer from 'jsonpointer'
 import { PointerFilter, RetrievePipeline } from '../pipeline.js'
-import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
 import { Document } from 'langchain/document'
 import fs from 'fs'
 import { Collection } from 'mongodb'
 
 import Debug from 'debug'
 import JSONPointer from 'jsonpointer'
+import { RetrieveService } from '../../types/index.js'
+import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
+import { Mongo2 } from '../../vectorstores/mongo.js'
+import type { RetrievePerset } from '../perset.js'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline:metadata')
 
@@ -38,10 +41,11 @@ export class MetadataRetrieve extends RetrievePipeline {
 
   loaderArgs: Record<string, any> | undefined
 
-  constructor(vectorStore: HNSWLib2, options?: MetadataRetrieveOptions) {
-    if (!vectorStore) throw new Error('没有指定向量数据库实例')
+  constructor(perset: RetrievePerset, options?: MetadataRetrieveOptions) {
+    const { service } = perset
+    if (!service) throw new Error('没有指定向量数据库实例')
 
-    super(vectorStore)
+    super(service)
     if (options && typeof options === 'object') {
       const { filter, matchBy, fromAssocStore, asDoc, asMeta, retrieveObject } =
         options
@@ -64,13 +68,22 @@ export class MetadataRetrieve extends RetrievePipeline {
       this.retrieveObject = retrieveObject === true
     }
     // 向量数据库的存储路径
-    const { directory } = vectorStore
-    // 检查是否存在loader.json
-    const loderfilepath = `${directory}/loader.json`
-    if (fs.existsSync(loderfilepath)) {
-      this.loaderArgs = JSON.parse(
-        fs.readFileSync(loderfilepath).toString('utf-8')
-      )
+    if (service instanceof HNSWLib2) {
+      const { directory } = service
+      // 检查是否存在loader.json
+      const loderfilepath = `${directory}/loader.json`
+      if (fs.existsSync(loderfilepath)) {
+        this.loaderArgs = JSON.parse(
+          fs.readFileSync(loderfilepath).toString('utf-8')
+        )
+      }
+    } else if (service instanceof Mongo2) {
+      this.loaderArgs = {
+        loaderName: 'MongodbCollectionLoader',
+        connUri: perset.options.docStore || service.connUri,
+        dbName: perset.options.docDb || service.dbName,
+        clName: perset.options.docCl || service.clName,
+      }
     }
   }
   /**
@@ -324,7 +337,7 @@ export class MetadataRetrieve extends RetrievePipeline {
           }
         }
         debug(`本地非向量化文档检索条件\n%O`, matcher)
-        const assocDocs = await this.vectorStore?.metadataSearch(matcher, {
+        const assocDocs = await this.service?.metadataSearch(matcher, {
           fromAssocStore: this.fromAssocStore,
         })
         if (assocDocs) {
@@ -347,7 +360,7 @@ export class MetadataRetrieve extends RetrievePipeline {
         }
       }
     } else if (this.filter) {
-      result = await this.vectorStore?.metadataSearch(this.filter, {
+      result = await this.service?.metadataSearch(this.filter, {
         fromAssocStore: this.fromAssocStore,
       })
     }

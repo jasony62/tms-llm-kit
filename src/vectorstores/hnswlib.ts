@@ -1,16 +1,13 @@
 import { Document } from 'langchain/document'
-import { HNSWLib } from 'langchain/vectorstores/hnswlib'
-import { Embeddings } from 'langchain/embeddings/base'
+import { HNSWLib } from '@langchain/community/vectorstores/hnswlib'
+import { Embeddings } from '@langchain/core/embeddings'
 import jsonpointer from 'jsonpointer'
 import fs from 'fs'
 import path from 'path'
 import { SynchronousInMemoryDocstore } from 'langchain/stores/doc/in_memory'
-interface MetaFilter {
-  [pointer: string]: any
-}
+import { MetaFilter, RetrieveService } from '../types/index.js'
 
-export class HNSWLib2 {
-  declare FilterType: (doc: Document) => boolean
+export class HNSWLib2 implements RetrieveService {
   /**
    * 关联文档
    */
@@ -50,7 +47,7 @@ export class HNSWLib2 {
   async similaritySearch(
     query: string,
     k = 1,
-    filter?: this['FilterType']
+    filter?: (doc: Document<Record<string, any>>) => boolean
   ): Promise<Document[]> {
     return this.store.similaritySearch(query, k, filter)
   }

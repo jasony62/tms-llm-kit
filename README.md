@@ -60,6 +60,8 @@ WIKIJS_API_KEY=
 
 `tms-llm-kit`内部用`jsonpointer`格式指定字段名称。如果输入的字段名不是以`/`开头，自动添加`/`。
 
+示例 json 数据
+
 ```json
 {
   "foo": ["bar", "baz"],
@@ -74,6 +76,8 @@ WIKIJS_API_KEY=
   "m~n": 8
 }
 ```
+
+通 jsonpointer 获取值
 
 ```
 ""           // the whole document
@@ -436,7 +440,7 @@ DEBUG=* node ./dist/retrieve --store ./store/data01-faq-xf --perset meta-vector-
 
 | 参数            | 说明                                                                           | 类型    | 默认值 |
 | --------------- | ------------------------------------------------------------------------------ | ------- | ------ |
-| store           | 向量数据目录地址。                                                             | 文本    | 无     |
+| store           | 向量数据目录地址或者 mongodb 数据库的连接地址。                                | 文本    | 无     |
 | perset          | 预定义的检索方式。                                                             | 文本    | 无     |
 | text            | 检索条件。                                                                     | 文本    | 无     |
 | filter          | 文档过滤条件。JSON 格式的字符串。`jsonpointer`表示属性名和等于值的 JSON 对象。 | JSON    | 无     |
@@ -445,6 +449,12 @@ DEBUG=* node ./dist/retrieve --store ./store/data01-faq-xf --perset meta-vector-
 | as-doc          | 原始数据中作为文档处理的字段。只支持根字段名。                                 | 数组    |        |
 | retrieve-object | 返回关联文档的对象。包含的字段由 as-doc 指定。                                 | boolean |        |
 | as-meta         | 原始数据中作为元数据处理的字段。                                               | 数组    |        |
+| **mongo**       | 仅在`store`为 mongodb 数据库时，下列参数有效。                                 |         |        |
+| db              | 存储索引数据的 mongodb 数据库名称。                                            | 文本    |        |
+| cl              | 存储索引数据的 mongodb 集合名称。                                              | 文本    |        |
+| doc-store       | 存储文档数据的 mongodb 连接地址。                                              | 文本    |        |
+| doc-db          | 存储文档数据的 mongodb 数据库名称。                                            | 文本    |        |
+| doc-cl          | 存储文档数据的 mongodb 集合名称。                                              | 文本    |        |
 
 **注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
 

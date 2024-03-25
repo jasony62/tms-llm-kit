@@ -1,4 +1,4 @@
-import { BaseDocumentLoader } from 'langchain/document_loaders'
+import { BaseDocumentLoader } from 'langchain/document_loaders/base'
 import { Document } from 'langchain/document'
 import { DocTransform } from '../../utils/index.js'
 

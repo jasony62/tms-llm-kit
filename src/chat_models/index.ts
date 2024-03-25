@@ -1,4 +1,4 @@
-import { ChatBaiduWenxin } from 'langchain/chat_models/baiduwenxin'
+import { ChatBaiduWenxin } from '@langchain/community/chat_models/baiduwenxin'
 import { ChatXunfeiSpark } from './xunfeispark.js'
 
 /**
