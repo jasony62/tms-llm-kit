@@ -661,6 +661,17 @@ import { runPerset } from 'tms-llm-kit'
 result = await runPerset(perset, config, question, modelName)
 ```
 
+| 参数         | 取值       | 说明               |
+| ------------ | ---------- | ------------------ |
+| perset       | vector-doc |                    |
+| config       |            |                    |
+| +filter      |            |                    |
+| +assocFilter |            |                    |
+| +assocMatch  |            |                    |
+| +asDoc       |            |                    |
+| +asMeta      |            |                    |
+| +store       |            | 向量库的存储位置。 |
+
 # 构造 docker 镜像
 
 在项目根目录下执行
