@@ -6,6 +6,7 @@ import { EmbeddingsParams } from '@langchain/core/embeddings'
 import { Embeddings2 } from './types.js'
 
 import Debug from 'debug'
+import { waitFor } from '../utils/index.js'
 
 const debug = Debug('embeddings:xunfeispark')
 
@@ -40,7 +41,9 @@ export function createSparkModel(): SparkModel {
 
   return model
 }
-
+/**
+ * 封装对大模型的调用
+ */
 class SparkModel {
   private _apiUrl: {
     url: string
@@ -100,7 +103,11 @@ class SparkModel {
 
     return url2
   }
-
+  /**
+   * 返回指定文本的向量
+   * @param text
+   * @returns
+   */
   async embedding(text: string) {
     let url
     if (this._apiUrl.url) {
@@ -145,14 +152,6 @@ class SparkModel {
   }
 }
 
-async function waitFor(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(true)
-    }, ms)
-  })
-}
-
 export class XunfeisparkEmbeddings extends Embeddings2 {
   /**
    *
@@ -171,7 +170,11 @@ export class XunfeisparkEmbeddings extends Embeddings2 {
   get maxChunkSize() {
     return 256
   }
-
+  /**
+   * 批量生成文档的向量
+   * @param documents
+   * @returns
+   */
   async embedDocuments(documents: string[]): Promise<number[][]> {
     let vectors = []
     let i = 0
@@ -180,12 +183,18 @@ export class XunfeisparkEmbeddings extends Embeddings2 {
       if (vector) {
         vectors.push(vector)
         debug(`完成第个【${++i}】文档`)
+        // 添加延时，避免并发限制
         await waitFor(100)
       }
     }
     return vectors
   }
-
+  /**
+   * 生成指定文档的向量
+   *
+   * @param document
+   * @returns
+   */
   async embedQuery(document: string): Promise<number[]> {
     const model = await this.getModel()
     let vector = await model.embedding(document)

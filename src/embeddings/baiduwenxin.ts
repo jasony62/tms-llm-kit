@@ -6,6 +6,7 @@ import { EmbeddingsParams } from '@langchain/core/embeddings'
 import Debug from 'debug'
 import fs from 'fs'
 import { Embeddings2 } from './types.js'
+import { waitFor } from '../utils/index.js'
 
 const debug = Debug('tms-llm-kit:embeddings:baiduwenxin')
 
@@ -149,12 +150,4 @@ export class BaiduwenxinEmbeddings extends Embeddings2 {
     let embeddings = await this.embedDocuments([doc])
     return embeddings[0]
   }
-}
-
-async function waitFor(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(true)
-    }, ms)
-  })
 }

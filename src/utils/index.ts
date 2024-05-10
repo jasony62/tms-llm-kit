@@ -113,3 +113,15 @@ export class DocTransform {
     return new DocTransform(vecFields, metaFields)
   }
 }
+/**
+ * 在调用间添加延时
+ * @param ms
+ * @returns
+ */
+export async function waitFor(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true)
+    }, ms)
+  })
+}

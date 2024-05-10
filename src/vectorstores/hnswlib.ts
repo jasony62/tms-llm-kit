@@ -1,6 +1,6 @@
 import { Document } from 'langchain/document'
 import { HNSWLib } from '@langchain/community/vectorstores/hnswlib'
-import { Embeddings } from '@langchain/core/embeddings'
+import { EmbeddingsInterface } from '@langchain/core/embeddings'
 import jsonpointer from 'jsonpointer'
 import fs from 'fs'
 import path from 'path'
@@ -24,7 +24,7 @@ export class HNSWLib2 implements RetrieveService {
    * @param embeddings
    * @returns
    */
-  static async load(directory: string, embeddings: Embeddings) {
+  static async load(directory: string, embeddings: EmbeddingsInterface) {
     let store = await HNSWLib.load(directory, embeddings)
     let lib = new HNSWLib2(store, directory)
     /**
