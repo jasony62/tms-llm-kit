@@ -171,6 +171,9 @@ export async function runPerset(
   /**
    * 从指定的数据库中加载数据
    */
+  if (!options.store || typeof options.store !== 'string') {
+    throw new Error('没有指定存储地址')
+  }
   let service
   if (options.store.indexOf('mongodb://') === 0) {
     const { db: dbName, cl: clName, asVec, asMeta } = options

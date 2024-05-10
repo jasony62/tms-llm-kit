@@ -6,6 +6,7 @@ import { PromptTemplate } from '@langchain/core/prompts'
 import { LLMChain } from 'langchain/chains'
 
 import Debug from 'debug'
+import { ChatAlibabaTongyi } from '@langchain/community/chat_models/alibaba_tongyi'
 
 const debug = Debug('tms-llm-kit:retrieve:pipeline:llmanswer')
 
@@ -24,6 +25,7 @@ export class LLMAnswer extends RetrievePipeline {
     this.verbose = options?.verbose === true
     this.modelName = options?.modelName
   }
+
   baiduwenxin() {
     const { BAIDUWENXIN_API_KEY, BAIDUWENXIN_SECRET_KEY } = process.env
     const llm = new ChatBaiduWenxin({
@@ -33,6 +35,15 @@ export class LLMAnswer extends RetrievePipeline {
     })
     return llm
   }
+
+  alibaba_tongyi() {
+    const { ALIBABA_TONGYI_APIKEY } = process.env
+    const llm = new ChatAlibabaTongyi({
+      alibabaApiKey: ALIBABA_TONGYI_APIKEY,
+    })
+    return llm
+  }
+
   xunfeispark() {
     const { XUNFEISPARK_API_KEY, XUNFEISPARK_SECRET_KEY, XUNFEISPARK_APP_ID } =
       process.env
@@ -61,6 +72,9 @@ export class LLMAnswer extends RetrievePipeline {
           break
         case 'xunfeispark':
           llm = this.xunfeispark()
+          break
+        case 'alibaba_tongyi':
+          llm = this.alibaba_tongyi()
           break
         default:
           debug(`不支持的语言大模型：${this.modelName}`)

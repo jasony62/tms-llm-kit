@@ -6,7 +6,6 @@ import { Collection } from 'mongodb'
 
 import Debug from 'debug'
 import JSONPointer from 'jsonpointer'
-import { RetrieveService } from '../../types/index.js'
 import { HNSWLib2 } from '../../vectorstores/hnswlib.js'
 import { Mongo2 } from '../../vectorstores/mongo.js'
 import type { RetrievePerset } from '../perset.js'
@@ -141,7 +140,7 @@ export class MetadataRetrieve extends RetrievePipeline {
         return m
       }, {} as Record<string, any>)
     }
-    let contents: Record<string, any> = {}
+    const contents: Record<string, any> = {}
     if (Array.isArray(asDoc) && asDoc.length) {
       asDoc?.forEach((k) => {
         contents[k] = jsonpointer.compile(k).get(rawDoc)
