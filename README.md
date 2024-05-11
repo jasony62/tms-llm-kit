@@ -455,6 +455,7 @@ DEBUG=* node ./dist/retrieve --store ./store/data01-faq-xf --perset meta-vector-
 | doc-store       | 存储文档数据的 mongodb 连接地址。                                              | 文本    |        |
 | doc-db          | 存储文档数据的 mongodb 数据库名称。                                            | 文本    |        |
 | doc-cl          | 存储文档数据的 mongodb 集合名称。                                              | 文本    |        |
+| streaming       | 流式输出与大模型的对话结果。                                                   | boolean |        |
 
 **注意**：检索命令的参数中表示字段的地方，都用`jsonpointer`格式表示，例如：`/_pageContentSource`。
 

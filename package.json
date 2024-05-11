@@ -1,6 +1,6 @@
 {
   "name": "tms-llm-kit",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "基于langchain实现的使用语言大模型工具集，包括：生成向量数据，向量查询等。",
   "type": "module",
   "main": "./dist/index.js",

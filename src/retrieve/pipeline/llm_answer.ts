@@ -13,6 +13,8 @@ const debug = Debug('tms-llm-kit:retrieve:pipeline:llmanswer')
 interface LLMAnswerOptions {
   modelName?: string
   verbose?: boolean
+  streaming?: boolean
+  streamingCallback?: (text: string) => void
 }
 /**
  * 语言大模型生成回复
@@ -20,10 +22,18 @@ interface LLMAnswerOptions {
 export class LLMAnswer extends RetrievePipeline {
   modelName
   verbose = false
+  streaming = false
+  streamingCallback = (token: string) => {
+    console.log(token)
+  }
+
   constructor(public question: string, options?: LLMAnswerOptions) {
     super()
     this.verbose = options?.verbose === true
     this.modelName = options?.modelName
+    this.streaming = options?.streaming === true
+    if (options?.streamingCallback)
+      this.streamingCallback = options.streamingCallback
   }
 
   baiduwenxin() {
@@ -40,6 +50,7 @@ export class LLMAnswer extends RetrievePipeline {
     const { ALIBABA_TONGYI_APIKEY } = process.env
     const llm = new ChatAlibabaTongyi({
       alibabaApiKey: ALIBABA_TONGYI_APIKEY,
+      streaming: this.streaming,
     })
     return llm
   }
@@ -91,7 +102,18 @@ export class LLMAnswer extends RetrievePipeline {
           verbose: this.verbose,
         })
         let stuff = documents.map((doc) => doc.pageContent).join('\n')
-        const answer = await chain.call({ stuff, question: this.question })
+        const answer = await chain.invoke(
+          { stuff, question: this.question },
+          this.streaming
+            ? {
+                callbacks: [
+                  {
+                    handleLLMNewToken: this.streamingCallback,
+                  },
+                ],
+              }
+            : {}
+        )
 
         return [new Document({ pageContent: answer.text })]
       }

@@ -69,18 +69,23 @@ class AssocDoc extends RetrievePerset {
 }
 /**
  * 语言大模型生成回复
+ *
+ * 用户的输入作为检索条件，从向量数据库中查找匹配的内容
+ * 将匹配的内容作为背景材料发送给大模型成生成回复
  */
 class FeedLlm extends RetrievePerset {
   constructor(service: RetrieveService, options: Record<string, any>) {
     super('feed-llm', service, options)
   }
   async run(text: string): Promise<Document[]> {
-    const { filter, numRetrieve, model } = this.options
+    const { filter, numRetrieve, model, streaming } = this.options
     let pipeline = new VectorRetrieve(this.service, { filter, numRetrieve })
     let modelName = model as string
     let pipeline2 = new LLMAnswer(text, {
       modelName,
       verbose: this.options.llmVerbose === true,
+      streaming: streaming === true,
+      streamingCallback: this.options.streamingCallback,
     })
     pipeline.next = pipeline2
     let result = await pipeline.run(text)

@@ -41,6 +41,7 @@ program.option('--cl <clName>', 'mongodb集合名称。')
 program.option('--doc-store <docStore>', '存储文档数据的 mongodb 连接地址。')
 program.option('--doc-db <docDbName>', '存储文档数据的 mongodb 数据库名称。')
 program.option('--doc-cl <docClName>', '存储文档数据的 mongodb 数据库名称。')
+program.option('--streaming', '流式输出与大模型的对话结果。')
 
 program.parse()
 const options = program.opts()
@@ -57,6 +58,27 @@ if (store.indexOf('mongodb://') !== 0 && !fs.existsSync(store)) {
   process.exit(0)
 }
 
-let result = await runPerset(options.perset, options, text)
-
-console.log('返回的答案：\n%s', JSON.stringify(result, null, 2))
+// 支持流式输出
+if (options.streaming) {
+  let line = ''
+  options.streamingCallback = (() => {
+    return (token: string) => {
+      if (token.indexOf('\n') === -1) {
+        line += token
+      } else {
+        let st = token.split('\n')
+        line += st[0]
+        console.log(line)
+        for (let i = 1; i < st.length - 1; i++) {
+          console.log(st[i])
+        }
+        line = st[st.length - 1]
+      }
+    }
+  })()
+  await runPerset(options.perset, options, text)
+  if (line) console.log(line)
+} else {
+  let result = await runPerset(options.perset, options, text)
+  console.log('返回的答案：\n%s', JSON.stringify(result, null, 2))
+}
