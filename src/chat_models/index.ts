@@ -1,13 +1,13 @@
 import { ChatBaiduWenxin } from '@langchain/community/chat_models/baiduwenxin'
+import { ChatAlibabaTongyi } from '@langchain/community/chat_models/alibaba_tongyi'
 import { ChatXunfeiSpark } from './xunfeispark.js'
 
 /**
  * 连接大模型
  */
-
 const LangModels: any = {}
 
-export function useLangModel(engine: string) {
+export function useLangModel(engine: string, options = { streaming: false }) {
   if (!engine || typeof engine !== 'string')
     throw new Error('没有指定语言大模型的名称')
 
@@ -35,6 +35,15 @@ export function useLangModel(engine: string) {
           xunfeiApiKey: XUNFEISPARK_API_KEY,
           xunfeiSecretKey: XUNFEISPARK_SECRET_KEY,
           xunfeiAppId: XUNFEISPARK_APP_ID,
+        })
+      }
+      break
+    case 'alibaba_tongyi':
+      {
+        const { ALIBABA_TONGYI_APIKEY } = process.env
+        llm = new ChatAlibabaTongyi({
+          alibabaApiKey: ALIBABA_TONGYI_APIKEY,
+          streaming: options.streaming,
         })
       }
       break
